@@ -1,9 +1,6 @@
-# encoding=utf-8
-import numpy as np
-import os
 import gym
-from gym import error, spaces
-from gym import utils
+import numpy as np
+from gym import spaces
 from gym.utils import seeding
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -35,59 +32,54 @@ class ClassifyEnv(gym.Env):
         y_true_cur = []
         info = {}
         terminal = False
-        if a == self.Answer[self.id[self.step_ind]]:
-            if self.Answer[self.id[self.step_ind]] == 0:
+        if a == self.Answer[self.id[self.step_ind]]:  # a: return of policy
+            # When y_pred == y_true
+            if self.Answer[self.id[self.step_ind]] == 0:  # Minority
                 reward = 1.
             else:
-                reward = 1. * self.imb_rate
+                reward = 1. * self.imb_rate  # Majority
         else:
-            if self.Answer[self.id[self.step_ind]] == 0:
+            # When y_pred != y_true
+            if self.Answer[self.id[self.step_ind]] == 0:  # Minority
                 reward = -1.
                 if self.mode == 'train':
-                    terminal = True
+                    terminal = True  # Stop episode when minority class is misclassified
             else:
-                reward = -1. * self.imb_rate
+                reward = -1. * self.imb_rate  # Majority
         self.step_ind += 1
 
         if self.step_ind == self.game_len - 1:
             y_true_cur = self.Answer[self.id]
-            info['gmean'], info['fmeasure'] = self.My_metrics(np.array(self.y_pred),
-                                                              np.array(y_true_cur[:self.step_ind]))
+            info['gmean'], info['fmeasure'] = self.My_metrics(np.array(self.y_pred), np.array(y_true_cur[:self.step_ind]))
             terminal = True
 
         return self.Env_data[self.id[self.step_ind]], reward, terminal, info
 
     def My_metrics(self, y_pre, y_true):
         confusion_mat = confusion_matrix(y_true, y_pre)
-        print('\n')
         print(classification_report(y_true, y_pre))
+        print(confusion_mat)
+
         conM = np.array(confusion_mat, dtype='float')
         TP = conM[1][1]
         TN = conM[0][0]
         FN = conM[1][0]
         FP = conM[0][1]
-        TPrate = TP / (TP + FN)  # 真阳性率
-        TNrate = TN / (TN + FP)  # 真阴性率
-        FPrate = FP / (TN + FP)  # 假阳性率
-        FNrate = FN / (TP + FN)  # 假阴性率
-        PPvalue = TP / (TP + FP)  # 阳性预测值
-        NPvalue = TN / (TN + FN)  # 假性预测值
 
-        G_mean = np.sqrt(TPrate * TNrate)
+        Precision = TP / (TP + FP)  # Positive Predictive Value
+        Recall = TP / (TP + FN)  # Sensitivity
 
-        Recall = TPrate = TP / (TP + FN)
-        Precision = PPvalue = TP / (TP + FP)
-        F_measure = 2 * Recall * Precision / (Recall + Precision)
-        print(confusion_mat)
-        res = 'G-mean:{}, F_measure:{}\n'.format(G_mean, F_measure)
-        print(res)
-        print()
+        G_mean = np.sqrt(Precision * Recall)
+        F_measure = 2 * (Precision * Recall / (Precision + Recall))
+        print(f"G-mean:{G_mean}, F_measure:{F_measure}\n\n")
+
         return G_mean, F_measure
 
-    # return: (states, observations)
     def reset(self):
+        """returns: (states, observations)."""
         if self.mode == 'train':
             np.random.shuffle(self.id)
+
         self.step_ind = 0
         self.y_pred = []
         return self.Env_data[self.id[self.step_ind]]

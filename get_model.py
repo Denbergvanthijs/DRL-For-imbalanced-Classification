@@ -1,13 +1,8 @@
-#coding=utf-8
-import keras
-import tensorflow as tf
-import numpy as np
-from keras.models import Model, Sequential
-from keras.layers import Input, Dense, Conv2D, MaxPooling2D, Flatten, Activation, Embedding
-from keras.optimizers import Adam, SGD
-from keras.layers import LSTM
+from keras.layers import Activation, Conv2D, Dense, Embedding, Flatten, MaxPooling2D
+from keras.models import Sequential
 
-def get_text_model(input_shape,output):
+
+def get_text_model(input_shape, output):
     top_words, max_words = input_shape
     model = Sequential()
     model.add(Embedding(top_words, 128, input_length=max_words))
@@ -31,5 +26,3 @@ def get_image_model(in_shape, output):
     model.add(Activation('relu'))
     model.add(Dense(output))
     return model
-
-
