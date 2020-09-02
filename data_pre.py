@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
 from keras.datasets import cifar10, fashion_mnist, imdb, mnist
 from keras.preprocessing.sequence import pad_sequences
+from sklearn.model_selection import train_test_split
 
 
 def load_famnist():
@@ -52,13 +54,25 @@ def load_imdb():
     return x_train, y_train, x_test, y_test
 
 
+def load_creditcard(seed=42, fp="./data/creditcard.csv"):
+    df = pd.read_csv(fp)
+
+    df_y = df["Class"]
+    df.drop(columns=["Time", "Class"], inplace=True)
+    x_train, x_test, y_train, y_test = train_test_split(df.values, df_y.values, test_size=0.2, random_state=seed)
+
+    return x_train, y_train, x_test, y_test
+
+
 def load_data(data_name):
-    if data_name == 'famnist':
+    if data_name == "famnist":
         x_train, y_train, x_test, y_test = load_famnist()
-    elif data_name == 'mnist':
+    elif data_name == "mnist":
         x_train, y_train, x_test, y_test = load_mnist()
-    elif data_name == 'cifar10':
+    elif data_name == "cifar10":
         x_train, y_train, x_test, y_test = load_cifar10()
+    elif data_name == "credit":
+        x_train, y_train, x_test, y_test = load_creditcard()
     else:
         x_train, y_train, x_test, y_test = load_imdb()
 
@@ -111,5 +125,5 @@ def get_imb_data(x_train, y_train, x_test, y_test, imb_rate, min_class, maj_clas
 
 
 if __name__ == "__main__":
-    data = load_mnist()
+    data = load_creditcard()
     print([i.shape for i in data])

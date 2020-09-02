@@ -64,7 +64,7 @@ class ClassifyEnv(gym.Env):
         G_mean = np.sqrt(precision * recall)
         F_measure = 2 * (precision * recall / (precision + recall))
 
-        print(classification_report(y_true, y_pre))
+        print(classification_report(y_true, y_pre, target_names=["Minority", "Majority"]))
         print(f"TP: {TP} TN: {TN}\nFP: {FP} FN: {FN}")
         print(f"G-mean:{G_mean:.6f}, F_measure:{F_measure:.6f}\n")
 
