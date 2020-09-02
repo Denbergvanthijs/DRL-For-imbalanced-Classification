@@ -111,5 +111,5 @@ def get_imb_data(x_train, y_train, x_test, y_test, imb_rate, min_class, maj_clas
 
 
 if __name__ == "__main__":
-    data = load_cifar10()
+    data = load_mnist()
     print([i.shape for i in data])

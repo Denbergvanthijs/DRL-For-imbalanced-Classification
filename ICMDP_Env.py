@@ -6,8 +6,8 @@ from sklearn.metrics import classification_report, confusion_matrix
 
 
 class ClassifyEnv(gym.Env):
-
-    def __init__(self, mode, imb_rate, trainx, trainy, ):  # mode means training or testing
+    def __init__(self, mode, imb_rate, trainx, trainy, ):
+        """Mode means training or testing."""
         self.mode = mode
         self.imb_rate = imb_rate
 
@@ -19,7 +19,6 @@ class ClassifyEnv(gym.Env):
 
         self.num_classes = len(set(self.Answer))
         self.action_space = spaces.Discrete(self.num_classes)
-        print(self.action_space)
         self.step_ind = 0
         self.y_pred = []
 
@@ -56,22 +55,18 @@ class ClassifyEnv(gym.Env):
         return self.Env_data[self.id[self.step_ind]], reward, terminal, info
 
     def My_metrics(self, y_pre, y_true):
-        confusion_mat = confusion_matrix(y_true, y_pre)
+        # Source: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html
+        TN, FP, FN, TP = confusion_matrix(y_true, y_pre).ravel()
+
+        precision = TP / (TP + FP)  # Positive Predictive Value
+        recall = TP / (TP + FN)  # Sensitivity
+
+        G_mean = np.sqrt(precision * recall)
+        F_measure = 2 * (precision * recall / (precision + recall))
+
         print(classification_report(y_true, y_pre))
-        print(confusion_mat)
-
-        conM = np.array(confusion_mat, dtype='float')
-        TP = conM[1][1]
-        TN = conM[0][0]
-        FN = conM[1][0]
-        FP = conM[0][1]
-
-        Precision = TP / (TP + FP)  # Positive Predictive Value
-        Recall = TP / (TP + FN)  # Sensitivity
-
-        G_mean = np.sqrt(Precision * Recall)
-        F_measure = 2 * (Precision * Recall / (Precision + Recall))
-        print(f"G-mean:{G_mean}, F_measure:{F_measure}\n\n")
+        print(f"TP: {TP} TN: {TN}\nFP: {FP} FN: {FN}")
+        print(f"G-mean:{G_mean:.6f}, F_measure:{F_measure:.6f}\n")
 
         return G_mean, F_measure
 
