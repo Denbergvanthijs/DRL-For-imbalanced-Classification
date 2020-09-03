@@ -55,7 +55,7 @@ def load_imdb():
 
 
 def load_creditcard(seed=42, fp="./data/creditcard.csv"):
-    df = pd.read_csv(fp)
+    df = pd.read_csv(fp)  # Directly converted to float64
 
     df_y = df["Class"]
     df.drop(columns=["Time", "Class"], inplace=True)
