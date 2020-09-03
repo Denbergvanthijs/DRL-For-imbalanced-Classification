@@ -16,11 +16,11 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 EPS_MAX = 1.0  # EpsGreedyQPolicy minimum
 EPS_MIN = 0.1  # EpsGreedyQPolicy maximum
-EPS_STEPS = 100_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
+EPS_STEPS = 60_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
 GAMMA = 0.5  # Discount factor
 MODE = "train"  # Train or test mode
 LR = 0.00025  # Learning rate
-WARMUP_STEPS = 50_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
+WARMUP_STEPS = 1_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 LOG_INTERVAL = 10_000  # Interval for logging, no effect on model performance
 TARGET_MODEL_UPDATE = 10_000  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
 
@@ -88,7 +88,7 @@ dqn = DQNAgent(model=model, policy=policy, nb_actions=num_classes, memory=memory
 dqn.compile(Adam(lr=LR), metrics=["mae"])
 dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL)
 
-dqn.target_model.save("./models/mnistMin2MajAll.h5")
+dqn.target_model.save("./models/mnistMin2MajAllOptimised.h5")
 
 # Validation on train dataset
 env.mode = "test"
