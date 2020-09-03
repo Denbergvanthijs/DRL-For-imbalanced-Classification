@@ -69,7 +69,7 @@ class ClassifyEnv(gym.Env):
 
         print(classification_report(y_true, y_pre, target_names=["Minority", "Majority"]))
         print(f"TP: {TP} TN: {TN}\nFP: {FP} FN: {FN}")
-        print(f"G-mean:{G_mean:.6f}, F_measure:{F_measure:.6f}, MCC: {MCC}\n")
+        print(f"G-mean:{G_mean:.6f}, F_measure:{F_measure:.6f}, MCC: {MCC:.6f}\n")
 
         return G_mean, F_measure, MCC
 
