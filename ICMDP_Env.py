@@ -6,7 +6,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 
 
 class ClassifyEnv(gym.Env):
-    def __init__(self, mode, imb_rate, trainx, trainy, ):
+    def __init__(self, mode, imb_rate, trainx, trainy):
         """Mode means training or testing."""
         self.mode = mode
         self.imb_rate = imb_rate
@@ -41,7 +41,7 @@ class ClassifyEnv(gym.Env):
             # When y_pred != y_true
             if self.Answer[self.id[self.step_ind]] == 0:  # Minority
                 reward = -1.
-                if self.mode == 'train':
+                if self.mode == "train":
                     terminal = True  # Stop episode when minority class is misclassified
             else:
                 reward = -1. * self.imb_rate  # Majority
@@ -49,7 +49,7 @@ class ClassifyEnv(gym.Env):
 
         if self.step_ind == self.game_len - 1:
             y_true_cur = self.Answer[self.id]
-            info['gmean'], info['fmeasure'] = self.My_metrics(np.array(self.y_pred), np.array(y_true_cur[:self.step_ind]))
+            info["gmean"], info["fmeasure"], info["MCC"] = self.My_metrics(np.array(self.y_pred), np.array(y_true_cur[:self.step_ind]))
             terminal = True
 
         return self.Env_data[self.id[self.step_ind]], reward, terminal, info
@@ -58,21 +58,24 @@ class ClassifyEnv(gym.Env):
         # Source: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html
         TN, FP, FN, TP = confusion_matrix(y_true, y_pre).ravel()
 
+        # Source: https://en.wikipedia.org/wiki/Precision_and_recall
         precision = TP / (TP + FP)  # Positive Predictive Value
-        recall = TP / (TP + FN)  # Sensitivity
+        recall = TP / (TP + FN)  # Sensitivity, True Positive Rate (TPR)
+        specificity = TN / (TN + FP)  # Specificity, selectivity, True Negative Rate (TNR)
 
-        G_mean = np.sqrt(precision * recall)
-        F_measure = 2 * (precision * recall / (precision + recall))
+        G_mean = np.sqrt(recall * specificity)  # Geometric mean of recall and specificity, defined in paper
+        F_measure = np.sqrt(recall * precision)  # F-measure of recall and precision, defined in paper
+        MCC = (TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))  # Matthews Corr. Coefficient
 
         print(classification_report(y_true, y_pre, target_names=["Minority", "Majority"]))
         print(f"TP: {TP} TN: {TN}\nFP: {FP} FN: {FN}")
-        print(f"G-mean:{G_mean:.6f}, F_measure:{F_measure:.6f}\n")
+        print(f"G-mean:{G_mean:.6f}, F_measure:{F_measure:.6f}, MCC: {MCC}\n")
 
-        return G_mean, F_measure
+        return G_mean, F_measure, MCC
 
     def reset(self):
         """returns: (states, observations)."""
-        if self.mode == 'train':
+        if self.mode == "train":
             np.random.shuffle(self.id)
 
         self.step_ind = 0

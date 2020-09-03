@@ -16,21 +16,21 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 EPS_MAX = 1.0  # EpsGreedyQPolicy minimum
 EPS_MIN = 0.1  # EpsGreedyQPolicy maximum
-EPS_STEPS = 30_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
-GAMMA = 0.0  # Discount factor
-MODE = 'train'  # Train or test mode
+EPS_STEPS = 100_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
+GAMMA = 0.5  # Discount factor
+MODE = "train"  # Train or test mode
 LR = 0.00025  # Learning rate
-WARMUP_STEPS = 1_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
+WARMUP_STEPS = 50_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 LOG_INTERVAL = 10_000  # Interval for logging, no effect on model performance
 TARGET_MODEL_UPDATE = 10_000  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data', choices=['mnist', 'cifar10', 'famnist', 'imdb', "credit"], default='mnist')
-parser.add_argument('--model', choices=['image', 'text', "structured"], default='image')
-parser.add_argument('--imb-rate', type=float, default=0.04)
-parser.add_argument('--min-class', type=str, default='2')
-parser.add_argument('--maj-class', type=str, default='3')
-parser.add_argument('--training-steps', type=int, default=10_000)
+parser.add_argument("--data", choices=["mnist", "cifar10", "famnist", "imdb", "credit"], default="mnist")
+parser.add_argument("--model", choices=["image", "text", "structured"], default="image")
+parser.add_argument("--imb-rate", type=float, default=0.04)
+parser.add_argument("--min-class", type=str, default="2")
+parser.add_argument("--maj-class", type=str, default="3")
+parser.add_argument("--training-steps", type=int, default=10_000)
 args = parser.parse_args()
 
 data_source = args.data
@@ -62,17 +62,17 @@ print(model.summary())
 
 class ClassifyProcessor(Processor):
     def process_observation(self, observation):
-        if args.model == 'text':
+        if args.model == "text":
             return observation
         img = observation.reshape(input_shape)
         processed_observation = np.array(img)
         return processed_observation
 
     def process_state_batch(self, batch):
-        if args.model == 'text':
+        if args.model == "text":
             return batch.reshape((-1, input_shape[1]))
         batch = batch.reshape((-1,) + input_shape)
-        processed_batch = batch.astype('float32') / 1.
+        processed_batch = batch.astype("float32") / 1.
         return processed_batch
 
     def process_reward(self, reward):
@@ -81,22 +81,20 @@ class ClassifyProcessor(Processor):
 
 memory = SequentialMemory(limit=100_000, window_length=1)
 processor = ClassifyProcessor()
-policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr='eps', value_max=EPS_MAX, value_min=EPS_MIN, value_test=.05, nb_steps=EPS_STEPS)
+policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr="eps", value_max=EPS_MAX, value_min=EPS_MIN, value_test=.05, nb_steps=EPS_STEPS)
 dqn = DQNAgent(model=model, policy=policy, nb_actions=num_classes, memory=memory, processor=processor,
                nb_steps_warmup=WARMUP_STEPS, gamma=GAMMA, target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1.)
 
-dqn.compile(Adam(lr=LR), metrics=['mae'])
+dqn.compile(Adam(lr=LR), metrics=["mae"])
 dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL)
 
-# dqn.save_weights("./models/mnistMin2Maj3.h5", overwrite=True)
-# dqn.load_weights("./models/mnistMin2Maj3.h5")
-# dqn.target_model.save("./models/test.h5")
+dqn.target_model.save("./models/mnistMin2MajAll.h5")
 
 # Validation on train dataset
-env.mode = 'test'
+env.mode = "test"
 dqn.test(env, nb_episodes=1, visualize=False)
 
 # Validation on test dataset
 env = ClassifyEnv(MODE, imb_rate, x_test, y_test)
-env.mode = 'test'
+env.mode = "test"
 dqn.test(env, nb_episodes=1, visualize=False)
