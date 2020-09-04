@@ -1,11 +1,11 @@
 # DRL-For-imbalanced-Classification
 
-This repository provides code for the DQNimb model proposed in paper [DRL for imbalanced classification](https://arxiv.org/abs/1901.01379?context=cs.LG):
+This repository provides an altered version of the code for the DQNimb model proposed in paper [DRL for imbalanced classification](https://arxiv.org/abs/1901.01379?context=cs.LG):
 
 * **train_model**: Training the agent with DQN algorithm.
 * **ICMDP_Env**: The simulated environment for imabalanced classification.
 * **get_model**: Define the network structure for image or text.
-* **data_pre**: Loading the balanced datasets and constructing the imbalanced datasets according to the imbalanced rate.
+* **get_data**: Loading the balanced datasets and constructing the imbalanced datasets according to the imbalanced rate.
 
 ![image.png](https://i.loli.net/2019/11/26/4pr2qK5VQoBhNj1.png)
 ![table.png](https://i.loli.net/2019/11/26/iAkLw7JlsXFu56g.png)
@@ -13,6 +13,8 @@ This repository provides code for the DQNimb model proposed in paper [DRL for im
 ## Requirements
 
 * See `requirements.txt`
+* CUDA 10.0
+* cuDNN 7.4
 
 ## Quick Start
 

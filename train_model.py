@@ -1,17 +1,22 @@
 import argparse
+import os
 from datetime import datetime
 
 import numpy as np
 from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
+from pandas import unique
 from rl.agents.dqn import DQNAgent
 from rl.core import Processor
 from rl.memory import SequentialMemory
 from rl.policy import EpsGreedyQPolicy, LinearAnnealedPolicy
 
-from data_pre import get_imb_data, load_data
+from get_data import get_imb_data, load_data
 from get_model import get_image_model, get_structured_model, get_text_model
 from ICMDP_Env import ClassifyEnv
+
+# TODO: Determine why CPU is faster than GPU
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
 
 EPS_MAX = 1.0  # EpsGreedyQPolicy minimum
 EPS_MIN = 0.1  # EpsGreedyQPolicy maximum
@@ -22,6 +27,7 @@ LR = 0.00025  # Learning rate
 WARMUP_STEPS = 1_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 LOG_INTERVAL = 60_000  # Interval for logging, no effect on model performance
 TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
+LOG_DIR = "./logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--data", choices=["mnist", "cifar10", "famnist", "imdb", "credit"], default="mnist")
@@ -36,8 +42,8 @@ data_source = args.data
 imb_rate = args.imb_rate
 training_steps = args.training_steps
 
-min_class = list(map(int, list(args.min_class)))
-maj_class = list(map(int, list(args.maj_class)))
+min_class = list(map(int, args.min_class))  # String to list of integers
+maj_class = list(map(int, args.maj_class))  # String to list of integers
 
 x_train, y_train, x_test, y_test = load_data(data_source)
 x_train, y_train, x_test, y_test = get_imb_data(x_train, y_train, x_test, y_test, imb_rate, min_class, maj_class)
@@ -45,14 +51,14 @@ print(f"x_train: {x_train.shape}, y_train: {y_train.shape}")
 print(f"Minority: {min_class}, Majority: {maj_class}")
 
 input_shape = x_train.shape[1:]
-num_classes = len(set(y_test))
+num_classes = unique(y_test).size
 env = ClassifyEnv(MODE, imb_rate, x_train, y_train)
 
 if args.model == "image":
     model = get_image_model(input_shape, num_classes)
 elif args.model == "text":
-    in_shape = [5_000, 500]
-    model = get_text_model(in_shape, num_classes)
+    input_shape = [5_000, 500]
+    model = get_text_model(input_shape, num_classes)
 else:
     model = get_structured_model(input_shape, num_classes)
 
@@ -63,6 +69,7 @@ class ClassifyProcessor(Processor):
     def process_observation(self, observation):
         if args.model == "text":
             return observation
+
         img = observation.reshape(input_shape)
         processed_observation = np.array(img)
         return processed_observation
@@ -70,6 +77,7 @@ class ClassifyProcessor(Processor):
     def process_state_batch(self, batch):
         if args.model == "text":
             return batch.reshape((-1, input_shape[1]))
+
         batch = batch.reshape((-1,) + input_shape)
         processed_batch = batch.astype("float32") / 1.
         return processed_batch
@@ -85,11 +93,10 @@ dqn = DQNAgent(model=model, policy=policy, nb_actions=num_classes, memory=memory
                nb_steps_warmup=WARMUP_STEPS, gamma=GAMMA, target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1.)
 
 dqn.compile(Adam(lr=LR), metrics=["mae"])
-log_dir = "logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
-tensorboard = TensorBoard(log_dir=log_dir)
+tensorboard = TensorBoard(log_dir=LOG_DIR)
 dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL, callbacks=[tensorboard])
 
-dqn.target_model.save("./models/credit.h5")
+# dqn.target_model.save("./models/credit.h5")
 
 # Validation on train dataset
 env.mode = "test"

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from keras.models import load_model
 
-from data_pre import get_imb_data, load_data
+from get_data import get_imb_data, load_data
 
 
 def make_predictions(model, data):

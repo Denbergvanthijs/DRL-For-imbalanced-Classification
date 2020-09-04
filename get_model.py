@@ -5,6 +5,7 @@ from keras.models import Sequential
 
 def get_text_model(input_shape, output):
     top_words, max_words = input_shape
+
     model = Sequential()
     model.add(Embedding(top_words, 128, input_length=max_words))
     model.add(Flatten())
