@@ -6,7 +6,7 @@ import tensorflow as tf
 from gym import spaces
 from gym.utils import seeding
 from pandas import unique
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import confusion_matrix, mean_absolute_error
 
 
 class ClassifyEnv(gym.Env):
@@ -57,21 +57,21 @@ class ClassifyEnv(gym.Env):
         self.step_ind += 1
 
         if self.step_ind == self.game_len - 1:
-            self.My_metrics(np.array(self.y_pred), np.array(y_true_cur[:self.step_ind]), final=True)  # Print final metrics
             terminal = True
 
         if terminal is True:  # Collect metrics at the end of every episode.
             self.episode += 1
             y_true_cur = self.Answer[self.id]
-            info = self.My_metrics(np.array(self.y_pred), np.array(y_true_cur[:self.step_ind]))
+            info = self.metrics(np.array(y_true_cur[:self.step_ind]), np.array(self.y_pred))
 
-            for metric in zip(("gmean", "fmeasure", "MCC"), (info["gmean"], info["fmeasure"], info["MCC"])):
-                summary = tf.Summary(value=[tf.Summary.Value(tag=metric[0], simple_value=metric[1])])
+            for k, v in info.items():
+                summary = tf.Summary(value=[tf.Summary.Value(tag=k, simple_value=v)])
                 self.writer.add_summary(summary, global_step=self.episode)
 
         return self.Env_data[self.id[self.step_ind]], reward, terminal, info
 
-    def My_metrics(self, y_pred, y_true, final=False):
+    @staticmethod
+    def metrics(y_true, y_pred):
         # Source: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html
         TP, FN, FP, TN = confusion_matrix(y_true, y_pred).ravel()  # Minority: positive, Majority: negative
 
@@ -83,13 +83,9 @@ class ClassifyEnv(gym.Env):
         G_mean = np.sqrt(recall * specificity)  # Geometric mean of recall and specificity, defined in paper
         F_measure = np.sqrt(recall * precision)  # F-measure of recall and precision, defined in paper
         MCC = (TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))  # Matthews Corr. Coefficient
+        MAE = mean_absolute_error(y_true, y_pred)  # Mean absolute error
 
-        if final:  # Only print metrics when training is complete
-            print(classification_report(y_true, y_pred, target_names=["Minority", "Majority"]))
-            print(f"TP: {TP} TN: {TN}\nFP: {FP} FN: {FN}")
-            print(f"G-mean:{G_mean:.6f}, F_measure:{F_measure:.6f}, MCC: {MCC:.6f}\n")
-
-        return {"gmean": G_mean, "fmeasure": F_measure, "MCC": MCC}
+        return {"gmean": G_mean, "fmeasure": F_measure, "MCC": MCC, "MAE": MAE, "precision": precision, "recall": recall}
 
     def reset(self):
         """returns: (states, observations)."""

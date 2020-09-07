@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from keras.models import load_model
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix
 
 from get_data import get_imb_data, load_data
+from ICMDP_Env import ClassifyEnv
 
 
 def make_predictions(model, X_test):
@@ -16,12 +17,16 @@ def make_predictions(model, X_test):
 
 def plot_conf_matrix(y_true, y_pred):
     """Plots confusion matrix. True labels on x-axis. Predicted labels on y-axis."""
+    info = ClassifyEnv.metrics(y_true, y_pred)
     TP, FN, FP, TN = confusion_matrix(y_true, y_pred).ravel()  # Minority: positive, Majority: negative
-    MCC = (TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))  # Matthews Corr. Coefficient
+    ticklabels = ("Minority", "Majority")
 
-    ticklabels = ["Minority", "Majority"]
+    print(classification_report(y_true, y_pred, target_names=ticklabels))
+    print(f"TP: {TP} TN: {TN} FP: {FP} FN: {FN}")
+    print("".join([f"{k}: {v:.6f} " for k, v in info.items()]))
+
     sns.heatmap(((TP, FN), (FP, TN)), annot=True, fmt="_d", cmap="viridis", xticklabels=ticklabels, yticklabels=ticklabels)
-    plt.title(f"Confusion matrix\nMCC: {MCC:.6f}")
+    plt.title(f"Confusion matrix\nMCC: {info['MCC']:.6f}")
     plt.xlabel("Predicted labels")
     plt.ylabel("True labels")
     plt.show()
@@ -42,7 +47,7 @@ if __name__ == "__main__":
     X_train, y_train, X_test, y_test = get_imb_data(X_train, y_train, X_test, y_test, imb_rate, min_class, maj_class)
 
     model = load_model(fp_model)
-    y_pred = make_predictions(model=model, data=X_test)
+    y_pred = make_predictions(model, X_test)
     plot_conf_matrix(y_test, y_pred)
 
     # plt.imshow(X_test[0], cmap="Greys")  # Show first image
