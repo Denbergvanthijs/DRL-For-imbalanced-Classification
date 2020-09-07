@@ -1,9 +1,7 @@
 import argparse
 import os
-from datetime import datetime
 
 import numpy as np
-from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
 from pandas import unique
 from rl.agents.dqn import DQNAgent
@@ -27,7 +25,7 @@ LR = 0.00025  # Learning rate
 WARMUP_STEPS = 1_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 LOG_INTERVAL = 60_000  # Interval for logging, no effect on model performance
 TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
-LOG_DIR = "./logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+FP_MODEL = "./models/credit.h5"  # Filepath to save the trained model
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--data", choices=["mnist", "cifar10", "famnist", "imdb", "credit"], default="mnist")
@@ -93,10 +91,8 @@ dqn = DQNAgent(model=model, policy=policy, nb_actions=num_classes, memory=memory
                nb_steps_warmup=WARMUP_STEPS, gamma=GAMMA, target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1.)
 
 dqn.compile(Adam(lr=LR), metrics=["mae"])
-tensorboard = TensorBoard(log_dir=LOG_DIR)
-dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL, callbacks=[tensorboard])
-
-# dqn.target_model.save("./models/credit.h5")
+dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL)
+dqn.target_model.save(FP_MODEL)
 
 # Validation on train dataset
 env.mode = "test"

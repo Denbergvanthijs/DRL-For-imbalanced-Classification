@@ -12,8 +12,8 @@ def load_famnist():
     y_train = y_train.reshape(y_train.shape[0], )
     x_test = x_test.reshape(-1, 28, 28, 1)
     y_test = y_test.reshape(y_test.shape[0], )
-    x_train /= 255
-    x_test /= 255
+    x_train = x_train / 255
+    x_test = x_test / 255
 
     return x_train, y_train, x_test, y_test
 
@@ -25,8 +25,8 @@ def load_mnist():
     y_train = y_train.reshape(y_train.shape[0], )
     x_test = x_test.reshape(-1, 28, 28, 1)
     y_test = y_test.reshape(y_test.shape[0], )
-    x_train /= 255
-    x_test /= 255
+    x_train = x_train / 255
+    x_test = x_test / 255
 
     return x_train, y_train, x_test, y_test
 
@@ -38,8 +38,8 @@ def load_cifar10():
     y_train = y_train.reshape(y_train.shape[0], )
     x_test = x_test.reshape(-1, 32, 32, 3)
     y_test = y_test.reshape(y_test.shape[0], )
-    x_train /= 255
-    x_test /= 255
+    x_train = x_train / 255
+    x_test = x_test / 255
 
     return x_train, y_train, x_test, y_test
 
@@ -57,7 +57,7 @@ def load_imdb():
 def load_creditcard(seed=42, fp="./data/creditcard.csv"):
     df = pd.read_csv(fp)  # Directly converted to float64
 
-    df_y = df["Class"]
+    df_y = df["Class"]  # 1: Fraud, 0: No fraud -> 1: Minority, 0: Majority
     df.drop(columns=["Time", "Class"], inplace=True)
     x_train, x_test, y_train, y_test = train_test_split(df.values, df_y.values, test_size=0.2, random_state=seed)
 

@@ -1,9 +1,12 @@
+from datetime import datetime
+
 import gym
 import numpy as np
+import tensorflow as tf
 from gym import spaces
 from gym.utils import seeding
-from sklearn.metrics import classification_report, confusion_matrix
 from pandas import unique
+from sklearn.metrics import classification_report, confusion_matrix
 
 
 class ClassifyEnv(gym.Env):
@@ -22,6 +25,9 @@ class ClassifyEnv(gym.Env):
         self.action_space = spaces.Discrete(self.num_classes)
         self.step_ind = 0
         self.y_pred = []
+
+        self.writer = tf.summary.FileWriter("./logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S"))
+        self.episode = 0  # The episode number
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -51,15 +57,23 @@ class ClassifyEnv(gym.Env):
         self.step_ind += 1
 
         if self.step_ind == self.game_len - 1:
-            y_true_cur = self.Answer[self.id]
-            info["gmean"], info["fmeasure"], info["MCC"] = self.My_metrics(np.array(self.y_pred), np.array(y_true_cur[:self.step_ind]))
+            self.My_metrics(np.array(self.y_pred), np.array(y_true_cur[:self.step_ind]), final=True)  # Print final metrics
             terminal = True
+
+        if terminal is True:  # Collect metrics at the end of every episode.
+            self.episode += 1
+            y_true_cur = self.Answer[self.id]
+            info = self.My_metrics(np.array(self.y_pred), np.array(y_true_cur[:self.step_ind]))
+
+            for metric in zip(("gmean", "fmeasure", "MCC"), (info["gmean"], info["fmeasure"], info["MCC"])):
+                summary = tf.Summary(value=[tf.Summary.Value(tag=metric[0], simple_value=metric[1])])
+                self.writer.add_summary(summary, global_step=self.episode)
 
         return self.Env_data[self.id[self.step_ind]], reward, terminal, info
 
-    def My_metrics(self, y_pred, y_true):
+    def My_metrics(self, y_pred, y_true, final=False):
         # Source: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html
-        TN, FP, FN, TP = confusion_matrix(y_true, y_pred).ravel()
+        TP, FN, FP, TN = confusion_matrix(y_true, y_pred).ravel()  # Minority: positive, Majority: negative
 
         # Source: https://en.wikipedia.org/wiki/Precision_and_recall
         precision = TP / (TP + FP)  # Positive Predictive Value
@@ -70,11 +84,12 @@ class ClassifyEnv(gym.Env):
         F_measure = np.sqrt(recall * precision)  # F-measure of recall and precision, defined in paper
         MCC = (TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))  # Matthews Corr. Coefficient
 
-        print(classification_report(y_true, y_pred, target_names=["Minority", "Majority"]))
-        print(f"TP: {TP} TN: {TN}\nFP: {FP} FN: {FN}")
-        print(f"G-mean:{G_mean:.6f}, F_measure:{F_measure:.6f}, MCC: {MCC:.6f}\n")
+        if final:  # Only print metrics when training is complete
+            print(classification_report(y_true, y_pred, target_names=["Minority", "Majority"]))
+            print(f"TP: {TP} TN: {TN}\nFP: {FP} FN: {FN}")
+            print(f"G-mean:{G_mean:.6f}, F_measure:{F_measure:.6f}, MCC: {MCC:.6f}\n")
 
-        return G_mean, F_measure, MCC
+        return {"gmean": G_mean, "fmeasure": F_measure, "MCC": MCC}
 
     def reset(self):
         """returns: (states, observations)."""
