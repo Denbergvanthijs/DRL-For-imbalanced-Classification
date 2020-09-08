@@ -44,11 +44,15 @@ if __name__ == "__main__":
 
     X_train, y_train, X_test, y_test = load_data(datasource)  # Load all data
     # Remove classes ∉ {min_class, maj_class}, imbalance the dataset
-    X_train, y_train, X_test, y_test = get_imb_data(X_train, y_train, X_test, y_test, imb_rate, min_class, maj_class)
+    # Make sure the same seed is used as during training to ensure no data contamination
+    X_train, y_train, X_test, y_test = get_imb_data(X_train, y_train, X_test, y_test, imb_rate, min_class, maj_class, seed=42)
 
     model = load_model(fp_model)
     y_pred = make_predictions(model, X_test)
-    plot_conf_matrix(y_test, y_pred)
+    plot_conf_matrix(y_test, y_pred)  # Plot confidence matrix based on test dataset
+
+    # y_baseline = np.ones(len(y_pred), dtype=int)  # Baseline, everything is Majority
+    # plot_conf_matrix(y_test, y_baseline)
 
     # plt.imshow(X_test[0], cmap="Greys")  # Show first image
     # plt.show()

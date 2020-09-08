@@ -10,7 +10,7 @@ from sklearn.metrics import confusion_matrix, mean_absolute_error
 
 
 class ClassifyEnv(gym.Env):
-    def __init__(self, mode, imb_rate, X_train, y_train):
+    def __init__(self, mode, imb_rate, X_train, y_train, metrics_interval=10_000):
         """The custom classify environment."""
         self.mode = mode  # Train or Test mode
         self.imb_rate = imb_rate  # Imbalance rate: 0 < x < 1
@@ -28,6 +28,7 @@ class ClassifyEnv(gym.Env):
 
         self.writer = tf.summary.FileWriter("./logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S"))
         self.step_number = 0  # Global episode number
+        self.metrics_interval = metrics_interval  # Interval to update metrics for logging
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -36,7 +37,6 @@ class ClassifyEnv(gym.Env):
     def step(self, a):
         self.y_pred.append(a)  # Append by policy predicted answer to y_pred
         self.step_number += 1
-        y_true_cur = []
         info = {}
         terminal = False
         curr_answer = self.y_train[self.id[self.step_ind]]
@@ -60,9 +60,9 @@ class ClassifyEnv(gym.Env):
         if self.step_ind == self.game_len - 1:
             terminal = True
 
-        if terminal is True:  # Collect metrics at the end of every episode.
-            y_true_cur = self.y_train[self.id]
-            info = self.metrics(np.array(y_true_cur[:self.step_ind]), np.array(self.y_pred))
+        if self.step_number % self.metrics_interval == 0:  # Collect metrics every `metrics_interval`-steps
+            y_pred = [np.argmax(x) for x in self.model.predict(self.X_train)]
+            info = self.metrics(self.y_train, y_pred)
 
             for k, v in info.items():
                 summary = tf.Summary(value=[tf.Summary.Value(tag=k, simple_value=v)])

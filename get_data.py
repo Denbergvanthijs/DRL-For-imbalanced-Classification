@@ -79,7 +79,10 @@ def load_data(data_name):
     return x_train, y_train, x_test, y_test
 
 
-def get_imb_data(x_train, y_train, x_test, y_test, imb_rate, min_class, maj_class):
+def get_imb_data(x_train, y_train, x_test, y_test, imb_rate, min_class, maj_class, seed=None):
+    if seed is not None:
+        np.random.seed(seed)  # Set the seed to ensure no contamination during training, testing and validating
+
     maj_x_train = []
     maj_y_train = []
     min_x_train = []
@@ -125,5 +128,14 @@ def get_imb_data(x_train, y_train, x_test, y_test, imb_rate, min_class, maj_clas
 
 
 if __name__ == "__main__":
+    np.random.seed(42)
     data = load_creditcard()
     print([i.shape for i in data])
+
+    # Generate random subset of data
+    x_train = data[0]
+    y_train = data[1]
+    train = np.column_stack((x_train, y_train))
+    rnd = train[np.random.choice(train.shape[0], int(0.1 * train.shape[0]), replace=False), :]
+    new_x = rnd[:, :29]
+    new_y = rnd[:, 29]

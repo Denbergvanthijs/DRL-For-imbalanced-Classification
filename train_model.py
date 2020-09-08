@@ -16,15 +16,15 @@ from ICMDP_Env import ClassifyEnv
 # TODO: Determine why CPU is faster than GPU
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
 
-EPS_MAX = 1.0  # EpsGreedyQPolicy minimum
-EPS_MIN = 0.1  # EpsGreedyQPolicy maximum
+EPS_MAX = 1.0  # EpsGreedyQPolicy maximum
+EPS_MIN = 0.1  # EpsGreedyQPolicy minimum
 EPS_STEPS = 200_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
 GAMMA = 0.5  # Discount factor
 MODE = "train"  # Train or test mode
 LR = 0.00025  # Learning rate
-WARMUP_STEPS = 1_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
+WARMUP_STEPS = 60_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 LOG_INTERVAL = 60_000  # Interval for logging, no effect on model performance
-TARGET_MODEL_UPDATE = 0.001  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
+TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
 FP_MODEL = "./models/credit.h5"  # Filepath to save the trained model
 
 parser = argparse.ArgumentParser()
@@ -44,7 +44,7 @@ min_class = list(map(int, args.min_class))  # String to list of integers
 maj_class = list(map(int, args.maj_class))  # String to list of integers
 
 X_train, y_train, X_test, y_test = load_data(data_source)
-X_train, y_train, X_test, y_test = get_imb_data(X_train, y_train, X_test, y_test, imb_rate, min_class, maj_class)
+X_train, y_train, X_test, y_test = get_imb_data(X_train, y_train, X_test, y_test, imb_rate, min_class, maj_class, seed=42)
 print(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 print(f"Minority: {min_class}, Majority: {maj_class}")
 
@@ -91,5 +91,6 @@ dqn = DQNAgent(model=model, policy=policy, nb_actions=num_classes, memory=memory
                nb_steps_warmup=WARMUP_STEPS, gamma=GAMMA, target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1.)
 
 dqn.compile(Adam(lr=LR), metrics=["mae"])
+env.model = model
 dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL)
 dqn.target_model.save(FP_MODEL)
