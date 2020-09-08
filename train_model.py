@@ -24,7 +24,7 @@ MODE = "train"  # Train or test mode
 LR = 0.00025  # Learning rate
 WARMUP_STEPS = 1_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 LOG_INTERVAL = 60_000  # Interval for logging, no effect on model performance
-TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
+TARGET_MODEL_UPDATE = 0.001  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
 FP_MODEL = "./models/credit.h5"  # Filepath to save the trained model
 
 parser = argparse.ArgumentParser()
@@ -43,14 +43,14 @@ training_steps = args.training_steps
 min_class = list(map(int, args.min_class))  # String to list of integers
 maj_class = list(map(int, args.maj_class))  # String to list of integers
 
-x_train, y_train, x_test, y_test = load_data(data_source)
-x_train, y_train, x_test, y_test = get_imb_data(x_train, y_train, x_test, y_test, imb_rate, min_class, maj_class)
-print(f"x_train: {x_train.shape}, y_train: {y_train.shape}")
+X_train, y_train, X_test, y_test = load_data(data_source)
+X_train, y_train, X_test, y_test = get_imb_data(X_train, y_train, X_test, y_test, imb_rate, min_class, maj_class)
+print(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 print(f"Minority: {min_class}, Majority: {maj_class}")
 
-input_shape = x_train.shape[1:]
+input_shape = X_train.shape[1:]
 num_classes = unique(y_test).size
-env = ClassifyEnv(MODE, imb_rate, x_train, y_train)
+env = ClassifyEnv(MODE, imb_rate, X_train, y_train)
 
 if args.model == "image":
     model = get_image_model(input_shape, num_classes)
@@ -93,12 +93,3 @@ dqn = DQNAgent(model=model, policy=policy, nb_actions=num_classes, memory=memory
 dqn.compile(Adam(lr=LR), metrics=["mae"])
 dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL)
 dqn.target_model.save(FP_MODEL)
-
-# Validation on train dataset
-env.mode = "test"
-dqn.test(env, nb_episodes=1, visualize=False)
-
-# Validation on test dataset
-env = ClassifyEnv(MODE, imb_rate, x_test, y_test)
-env.mode = "test"
-dqn.test(env, nb_episodes=1, visualize=False)
