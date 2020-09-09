@@ -46,13 +46,13 @@ class ClassifyEnv(gym.Env):
 
         if a == curr_answer:  # a: return of policy
             # When y_pred == y_true
-            if curr_answer == 0:  # Minority
+            if curr_answer == 1:  # Minority
                 reward = 1
             else:
                 reward = self.imb_rate  # Majority
         else:
             # When y_pred != y_true
-            if curr_answer == 0:  # Minority
+            if curr_answer == 1:  # Minority
                 reward = -1
                 if self.mode == "train":
                     terminal = True  # Stop episode when minority class is misclassified

@@ -11,13 +11,13 @@ from get_data import load_data
 
 
 def make_predictions(model, X_test):
-    """Input a trained model and X data, returns predictions on minority (0) or majority (1)."""
+    """Input a trained model and X data, returns predictions on minority (1) or majority (0)."""
     return [np.argmax(x) for x in model.predict(X_test)]
 
 
 def calculate_metrics(y_true, y_pred):
     # Source: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html
-    TP, FN, FP, TN = confusion_matrix(y_true, y_pred).ravel()  # Minority: positive, Majority: negative
+    TN, FP, FN, TP = confusion_matrix(y_true, y_pred).ravel()  # Minority: positive, Majority: negative
 
     # Source: https://en.wikipedia.org/wiki/Precision_and_recall
     precision = TP / (TP + FP)  # Positive Predictive Value
@@ -38,7 +38,7 @@ def plot_conf_matrix(y_true, y_pred):
     info = calculate_metrics(y_true, y_pred)
     ticklabels = ("Minority", "Majority")
 
-    print(classification_report(y_true, y_pred, target_names=ticklabels))
+    print(classification_report(y_true, y_pred, target_names=ticklabels[::-1]))
     print("".join([f"{k}: {v:.6f} " for k, v in info.items()]))
 
     sns.heatmap(((info.get("TP"), info.get("FN")), (info.get("FP"), info.get("TN"))), annot=True,

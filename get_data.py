@@ -90,7 +90,7 @@ def load_data(data_source, imb_rate, min_class, maj_class, seed=None):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=seed, stratify=y)
     X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=seed, stratify=y_test)
 
-    p_data, p_train, p_test, p_val = [((y == 0).sum(), (y == 0).sum() / (y == 1).sum()) for y in [y, y_train, y_test, y_val]]
+    p_data, p_train, p_test, p_val = [((y == 1).sum(), (y == 1).sum() / (y == 0).sum()) for y in [y, y_train, y_test, y_val]]
     print(f"Imbalance ratio `p`:\n"
           f"\tdataset:    n={p_data[0]}, p={p_data[1]:.6f}\n"
           f"\ttrain:      n={p_train[0]}, p={p_train[1]:.6f}\n"
@@ -103,7 +103,7 @@ def load_data(data_source, imb_rate, min_class, maj_class, seed=None):
 def get_imb_data(X, y, imb_rate, min_class, maj_class):
     """
     Split data in minority and majority, only values in {min_class, maj_class} will be kept.
-    Decrese minority rows to match the imbalance rate.
+    Decrease minority rows to match the imbalance rate.
 
     Note: Data will not be shuffled
     """
@@ -112,15 +112,15 @@ def get_imb_data(X, y, imb_rate, min_class, maj_class):
     for i, value in enumerate(y):
         if value in min_class:
             X_min.append(X[i])
-            y_min.append(0)
+            y_min.append(1)
 
         if value in maj_class:
             X_maj.append(X[i])
-            y_maj.append(1)
+            y_maj.append(0)
 
     min_len = int(len(y_maj) * imb_rate)
 
-    # Keep all majority rows, decrese minority rows to match `imb_rate`
+    # Keep all majority rows, decrease minority rows to match `imb_rate`
     X_imb = np.array(X_maj + X_min[:min_len])  # `min_len` can be more than the number of minority rows
     y_imb = np.array(y_maj + y_min[:min_len])
     return X_imb, y_imb
