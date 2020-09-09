@@ -13,6 +13,7 @@ This repository provides an altered version of the code for the DQNimb model pro
 ## Requirements
 
 * See `requirements.txt`
+* Latest version of https://github.com/keras-rl/keras-rl.git (pip version does not include all callbacks)
 * CUDA 10.0
 * cuDNN 7.4
 

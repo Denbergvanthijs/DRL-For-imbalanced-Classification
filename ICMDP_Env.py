@@ -29,7 +29,7 @@ class ClassifyEnv(gym.Env):
         self.step_ind = 0  # Episode step, resets every episode
         self.y_pred = []
 
-        self.writer = tf.summary.FileWriter("./logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S"))
+        self.writer = tf.compat.v1.summary.FileWriter("./logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S"))
         self.step_number = 0  # Global episode number
         self.metrics_interval = metrics_interval  # Interval to update metrics for logging
 
@@ -68,7 +68,7 @@ class ClassifyEnv(gym.Env):
             info = calculate_metrics(self.y_test, y_pred)
 
             for k, v in info.items():
-                summary = tf.Summary(value=[tf.Summary.Value(tag=k, simple_value=v)])
+                summary = tf.compat.v1.summary.Summary(value=[tf.compat.v1.summary.Summary.Value(tag=k, simple_value=v)])
                 self.writer.add_summary(summary, global_step=self.step_number)
 
         return self.X_train[self.id[self.step_ind]], reward, terminal, info
