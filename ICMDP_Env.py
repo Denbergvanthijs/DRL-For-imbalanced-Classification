@@ -6,17 +6,20 @@ import tensorflow as tf
 from gym import spaces
 from gym.utils import seeding
 from pandas import unique
-from sklearn.metrics import confusion_matrix, mean_absolute_error
+
+from predict import calculate_metrics
 
 
 class ClassifyEnv(gym.Env):
-    def __init__(self, mode, imb_rate, X_train, y_train, metrics_interval=10_000):
+    def __init__(self, mode, imb_rate, X_train, y_train, X_test, y_test, metrics_interval=10_000):
         """The custom classify environment."""
         self.mode = mode  # Train or Test mode
         self.imb_rate = imb_rate  # Imbalance rate: 0 < x < 1
 
         self.X_train = X_train
         self.y_train = y_train
+        self.X_test = X_test  # Testdata used every `metrics_interval`-steps to calculate metrics
+        self.y_test = y_test
         self.id = np.arange(self.X_train.shape[0])  # List of IDs to connect X and y data
 
         self.game_len = self.X_train.shape[0]
@@ -61,31 +64,14 @@ class ClassifyEnv(gym.Env):
             terminal = True
 
         if self.step_number % self.metrics_interval == 0:  # Collect metrics every `metrics_interval`-steps
-            y_pred = [np.argmax(x) for x in self.model.predict(self.X_train)]
-            info = self.metrics(self.y_train, y_pred)
+            y_pred = [np.argmax(x) for x in self.model.predict(self.X_test)]
+            info = calculate_metrics(self.y_test, y_pred)
 
             for k, v in info.items():
                 summary = tf.Summary(value=[tf.Summary.Value(tag=k, simple_value=v)])
                 self.writer.add_summary(summary, global_step=self.step_number)
 
         return self.X_train[self.id[self.step_ind]], reward, terminal, info
-
-    @staticmethod
-    def metrics(y_true, y_pred):
-        # Source: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html
-        TP, FN, FP, TN = confusion_matrix(y_true, y_pred).ravel()  # Minority: positive, Majority: negative
-
-        # Source: https://en.wikipedia.org/wiki/Precision_and_recall
-        precision = TP / (TP + FP)  # Positive Predictive Value
-        recall = TP / (TP + FN)  # Sensitivity, True Positive Rate (TPR)
-        specificity = TN / (TN + FP)  # Specificity, selectivity, True Negative Rate (TNR)
-
-        G_mean = np.sqrt(recall * specificity)  # Geometric mean of recall and specificity, defined in paper
-        F_measure = np.sqrt(recall * precision)  # F-measure of recall and precision, defined in paper
-        MCC = (TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))  # Matthews Corr. Coefficient
-        MAE = mean_absolute_error(y_true, y_pred)  # Mean absolute error
-
-        return {"gmean": G_mean, "fmeasure": F_measure, "MCC": MCC, "MAE": MAE, "precision": precision, "recall": recall}
 
     def reset(self):
         """returns: (states, observations)."""

@@ -2,6 +2,7 @@ import argparse
 import os
 
 import numpy as np
+from keras.models import load_model
 from keras.optimizers import Adam
 from pandas import unique
 from rl.agents.dqn import DQNAgent
@@ -9,9 +10,10 @@ from rl.core import Processor
 from rl.memory import SequentialMemory
 from rl.policy import EpsGreedyQPolicy, LinearAnnealedPolicy
 
-from get_data import get_imb_data, load_data
+from get_data import load_data
 from get_model import get_image_model, get_structured_model, get_text_model
 from ICMDP_Env import ClassifyEnv
+from predict import make_predictions, plot_conf_matrix
 
 # TODO: Determine why CPU is faster than GPU
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
@@ -43,14 +45,13 @@ training_steps = args.training_steps
 min_class = list(map(int, args.min_class))  # String to list of integers
 maj_class = list(map(int, args.maj_class))  # String to list of integers
 
-X_train, y_train, X_test, y_test = load_data(data_source)
-X_train, y_train, X_test, y_test = get_imb_data(X_train, y_train, X_test, y_test, imb_rate, min_class, maj_class, seed=42)
+X_train, y_train, X_test, y_test, X_val, y_val = load_data(data_source, imb_rate, min_class, maj_class)
 print(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 print(f"Minority: {min_class}, Majority: {maj_class}")
 
 input_shape = X_train.shape[1:]
 num_classes = unique(y_test).size
-env = ClassifyEnv(MODE, imb_rate, X_train, y_train)
+env = ClassifyEnv(MODE, imb_rate, X_train, y_train, X_test, y_test)
 
 if args.model == "image":
     model = get_image_model(input_shape, num_classes)
@@ -60,7 +61,7 @@ elif args.model == "text":
 else:
     model = get_structured_model(input_shape, num_classes)
 
-print(model.summary())
+# print(model.summary())
 
 
 class ClassifyProcessor(Processor):
@@ -84,13 +85,18 @@ class ClassifyProcessor(Processor):
         return np.clip(reward, -1., 1.)
 
 
-memory = SequentialMemory(limit=100_000, window_length=1)
 processor = ClassifyProcessor()
+memory = SequentialMemory(limit=100_000, window_length=1)
 policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr="eps", value_max=EPS_MAX, value_min=EPS_MIN, value_test=.05, nb_steps=EPS_STEPS)
 dqn = DQNAgent(model=model, policy=policy, nb_actions=num_classes, memory=memory, processor=processor,
                nb_steps_warmup=WARMUP_STEPS, gamma=GAMMA, target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1.)
 
 dqn.compile(Adam(lr=LR), metrics=["mae"])
-env.model = model
+env.model = model  # Set the prediction model for the environment. Used to calculate metrics
 dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL)
 dqn.target_model.save(FP_MODEL)
+
+# Validate on validation dataset
+trained_model = load_model(FP_MODEL)  # Load the just saved model
+y_pred = make_predictions(trained_model, X_val)
+plot_conf_matrix(y_val, y_pred)

@@ -7,135 +7,125 @@ from sklearn.model_selection import train_test_split
 
 def load_famnist():
     (x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
+    X = np.concatenate([x_train, x_test])  # Combine train/test to make new train/test/validate later on
+    y = np.concatenate([y_train, y_test])
 
-    x_train = x_train.reshape(-1, 28, 28, 1)
-    y_train = y_train.reshape(y_train.shape[0], )
-    x_test = x_test.reshape(-1, 28, 28, 1)
-    y_test = y_test.reshape(y_test.shape[0], )
-    x_train = x_train / 255
-    x_test = x_test / 255
+    X = X.reshape(-1, 28, 28, 1)
+    X = X / 255
+    y = y.reshape(y.shape[0], )
 
-    return x_train, y_train, x_test, y_test
+    return X, y
 
 
 def load_mnist():
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
+    X = np.concatenate([x_train, x_test])  # Combine train/test to make new train/test/validate later on
+    y = np.concatenate([y_train, y_test])
 
-    x_train = x_train.reshape(-1, 28, 28, 1)
-    y_train = y_train.reshape(y_train.shape[0], )
-    x_test = x_test.reshape(-1, 28, 28, 1)
-    y_test = y_test.reshape(y_test.shape[0], )
-    x_train = x_train / 255
-    x_test = x_test / 255
+    X = X.reshape(-1, 28, 28, 1)
+    X = X / 255
+    y = y.reshape(y.shape[0], )
 
-    return x_train, y_train, x_test, y_test
+    return X, y
 
 
 def load_cifar10():
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    X = np.concatenate([x_train, x_test])  # Combine train/test to make new train/test/validate later on
+    y = np.concatenate([y_train, y_test])
 
-    x_train = x_train.reshape(-1, 32, 32, 3)
-    y_train = y_train.reshape(y_train.shape[0], )
-    x_test = x_test.reshape(-1, 32, 32, 3)
-    y_test = y_test.reshape(y_test.shape[0], )
-    x_train = x_train / 255
-    x_test = x_test / 255
+    X = X.reshape(-1, 32, 32, 3)
+    X = X / 255
+    y = y.reshape(y.shape[0], )
 
-    return x_train, y_train, x_test, y_test
+    return X, y
 
 
 def load_imdb():
     config = [5_000, 500]
     (x_train, y_train), (x_test, y_test) = imdb.load_data(num_words=config[0])
+    X = np.concatenate([x_train, x_test])  # Combine train/test to make new train/test/validate later on
+    y = np.concatenate([y_train, y_test])
 
-    x_train = pad_sequences(x_train, maxlen=config[1])
-    x_test = pad_sequences(x_test, maxlen=config[1])
+    X = pad_sequences(X, maxlen=config[1])
 
-    return x_train, y_train, x_test, y_test
-
-
-def load_creditcard(seed=42, fp="./data/creditcard.csv"):
-    df = pd.read_csv(fp)  # Directly converted to float64
-
-    df_y = df["Class"]  # 1: Fraud, 0: No fraud -> 1: Minority, 0: Majority
-    df.drop(columns=["Time", "Class"], inplace=True)
-    x_train, x_test, y_train, y_test = train_test_split(df.values, df_y.values, test_size=0.2, random_state=seed)
-
-    return x_train, y_train, x_test, y_test
+    return X, y
 
 
-def load_data(data_name):
-    if data_name == "famnist":
-        x_train, y_train, x_test, y_test = load_famnist()
-    elif data_name == "mnist":
-        x_train, y_train, x_test, y_test = load_mnist()
-    elif data_name == "cifar10":
-        x_train, y_train, x_test, y_test = load_cifar10()
-    elif data_name == "credit":
-        x_train, y_train, x_test, y_test = load_creditcard()
+def load_creditcard(fp="./data/creditcard.csv"):
+    """
+    Loads the creditcard fraud dataset.
+    Source: https://www.kaggle.com/mlg-ulb/creditcardfraud
+    """
+    X = pd.read_csv(fp)  # Directly converted to float64
+
+    y = X["Class"]  # 1: Fraud/Minority, 0: No fraud/Majority
+    X.drop(columns=["Time", "Class"], inplace=True)  # Dropping `Time` since future data for the model could have another epoch
+
+    return X.values, y.values  # Numpy arrays
+
+
+def load_data(data_source, imb_rate, min_class, maj_class, seed=None):
+    """
+    Loads data from the `data_source`. Imbalances the data and divides the data into train, test and validation sets.
+    The imbalance rate of each individual dataset is the same as the `imb_rate`.
+    """
+    if data_source == "famnist":
+        X, y = load_famnist()
+    elif data_source == "mnist":
+        X, y = load_mnist()
+    elif data_source == "cifar10":
+        X, y = load_cifar10()
+    elif data_source == "credit":
+        X, y = load_creditcard()
+    elif data_source == "imdb":
+        X, y = load_imdb()
     else:
-        x_train, y_train, x_test, y_test = load_imdb()
+        raise ValueError("No valid `data_source`.")
 
-    return x_train, y_train, x_test, y_test
+    X, y = get_imb_data(X, y, imb_rate, min_class, maj_class)  # Imbalance the data
+
+    # 60 / 20 / 20 for train / test / validate
+    # stratify=y to ensure class balance is kept
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=seed, stratify=y)
+    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=seed, stratify=y_test)
+
+    p_data, p_train, p_test, p_val = [((y == 0).sum(), (y == 0).sum() / (y == 1).sum()) for y in [y, y_train, y_test, y_val]]
+    print(f"Imbalance ratio `p`:\n"
+          f"\tdataset:    n={p_data[0]}, p={p_data[1]:.6f}\n"
+          f"\ttrain:      n={p_train[0]}, p={p_train[1]:.6f}\n"
+          f"\ttest:       n={p_test[0]}, p={p_test[1]:.6f}\n"
+          f"\tvalidation: n={p_val[0]}, p={p_val[1]:.6f}")
+
+    return X_train, y_train, X_test, y_test, X_val, y_val
 
 
-def get_imb_data(x_train, y_train, x_test, y_test, imb_rate, min_class, maj_class, seed=None):
-    if seed is not None:
-        np.random.seed(seed)  # Set the seed to ensure no contamination during training, testing and validating
+def get_imb_data(X, y, imb_rate, min_class, maj_class):
+    """
+    Split data in minority and majority, only values in {min_class, maj_class} will be kept.
+    Decrese minority rows to match the imbalance rate.
 
-    maj_x_train = []
-    maj_y_train = []
-    min_x_train = []
-    min_y_train = []
+    Note: Data will not be shuffled
+    """
+    X_min, y_min, X_maj, y_maj = [], [], [], []
 
-    for i in range(len(y_train)):
-        if y_train[i] in min_class:
-            min_x_train.append(x_train[i])
-            min_y_train.append(0)
+    for i, value in enumerate(y):
+        if value in min_class:
+            X_min.append(X[i])
+            y_min.append(0)
 
-        if y_train[i] in maj_class:
-            maj_x_train.append(x_train[i])
-            maj_y_train.append(1)
+        if value in maj_class:
+            X_maj.append(X[i])
+            y_maj.append(1)
 
-    min_len = int(len(maj_y_train) * imb_rate)
+    min_len = int(len(y_maj) * imb_rate)
 
-    new_x_train = maj_x_train + min_x_train[:min_len]
-    new_y_train = maj_y_train + min_y_train[:min_len]
-    new_x_test = []
-    new_y_test = []
-
-    for i in range(len(y_test)):
-        if y_test[i] in min_class:
-            new_x_test.append(x_test[i])
-            new_y_test.append(0)
-
-        if y_test[i] in maj_class:
-            new_x_test.append(x_test[i])
-            new_y_test.append(1)
-
-    new_x_train = np.array(new_x_train)
-    new_y_train = np.array(new_y_train)
-    new_x_test = np.array(new_x_test)
-    new_y_test = np.array(new_y_test)
-
-    idx = [i for i in range(len(new_y_train))]
-    np.random.shuffle(idx)
-
-    new_x_train = new_x_train[idx]
-    new_y_train = new_y_train[idx]
-
-    return new_x_train, new_y_train, new_x_test, new_y_test
+    # Keep all majority rows, decrese minority rows to match `imb_rate`
+    X_imb = np.array(X_maj + X_min[:min_len])  # `min_len` can be more than the number of minority rows
+    y_imb = np.array(y_maj + y_min[:min_len])
+    return X_imb, y_imb
 
 
 if __name__ == "__main__":
-    np.random.seed(42)
-    data = load_creditcard()
-    print([i.shape for i in data])
-
-    # Generate random subset of data
-    x_train = data[0]
-    y_train = data[1]
-    train = np.column_stack((x_train, y_train))
-    rnd = train[np.random.choice(train.shape[0], int(0.1 * train.shape[0]), replace=False), :]
-    new_x = rnd[:, :29]
-    new_y = rnd[:, 29]
+    X_train, y_train, X_test, y_test, X_val, y_val = load_data("credit", 0.01, [1], [0], seed=42)
+    print([i.shape for i in [X_train, y_train, X_test, y_test, X_val, y_val]])
