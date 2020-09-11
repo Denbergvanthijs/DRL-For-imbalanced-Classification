@@ -6,7 +6,7 @@ from gym import spaces
 from gym.utils import seeding
 from tensorflow.compat.v1.summary import FileWriter, Summary
 
-from predict import calculate_metrics, make_predictions
+from utils import calculate_metrics, make_predictions
 
 
 class ClassifyEnv(gym.Env):
@@ -26,7 +26,7 @@ class ClassifyEnv(gym.Env):
         self.action_space = spaces.Discrete(2)  # 2 classes: Minority and majority
         self.episode_step = 0  # Episode step, resets every episode
 
-        self.writer = FileWriter("./logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S"))
+        self.writer = FileWriter("./logs/" + datetime.now().strftime("%Y%m%d_%H%M%S"))
         self.step_number = 0  # Global episode number
         self.metrics_interval = metrics_interval  # Interval to update metrics for logging
         self.model = None

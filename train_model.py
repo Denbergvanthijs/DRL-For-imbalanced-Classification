@@ -13,7 +13,7 @@ from rl.policy import EpsGreedyQPolicy, LinearAnnealedPolicy
 from get_data import load_data
 from get_model import get_image_model, get_structured_model, get_text_model
 from ICMDP_Env import ClassifyEnv
-from predict import make_predictions, plot_conf_matrix
+from utils import make_predictions, plot_conf_matrix
 
 # TODO: Determine why CPU is faster than GPU
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
@@ -22,11 +22,11 @@ EPS_MAX = 1.0  # EpsGreedyQPolicy maximum
 EPS_MIN = 0.1  # EpsGreedyQPolicy minimum
 EPS_STEPS = 200_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
 GAMMA = 0.5  # Discount factor
-MODE = "train"  # Train or test mode
 LR = 0.00025  # Learning rate
 WARMUP_STEPS = 60_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
-LOG_INTERVAL = 60_000  # Interval for logging, no effect on model performance
 TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
+MODE = "train"  # Train or test mode
+LOG_INTERVAL = 60_000  # Interval for logging, no effect on model performance
 FP_MODEL = "./models/credit.h5"  # Filepath to save the trained model
 
 parser = argparse.ArgumentParser()

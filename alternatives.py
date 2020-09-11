@@ -1,7 +1,7 @@
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 
 from get_data import load_data
-from predict import plot_conf_matrix
+from utils import plot_conf_matrix
 from xgboost import XGBClassifier
 
 # Based on: https://github.com/dmlc/xgboost/blob/master/demo/kaggle-higgs/higgs-numpy.py

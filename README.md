@@ -4,7 +4,7 @@ This repository provides an altered version of the code for the DQNimb model pro
 
 * **train_model**: Training the agent with DQN algorithm.
 * **ICMDP_Env**: The simulated environment for imabalanced classification.
-* **get_model**: Define the network structure for image or text.
+* **get_model**: Define the network structure for image, text or structured.
 * **get_data**: Loading the balanced datasets and constructing the imbalanced datasets according to the imbalanced rate.
 
 ![image.png](https://i.loli.net/2019/11/26/4pr2qK5VQoBhNj1.png)
