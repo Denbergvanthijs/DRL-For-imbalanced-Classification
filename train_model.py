@@ -2,13 +2,13 @@ import argparse
 import os
 
 import numpy as np
-from keras.models import load_model
 from keras.optimizers import Adam
 from pandas import unique
 from rl.agents.dqn import DQNAgent
 from rl.core import Processor
 from rl.memory import SequentialMemory
 from rl.policy import EpsGreedyQPolicy, LinearAnnealedPolicy
+from tensorflow.keras.models import load_model
 
 from get_data import load_data
 from get_model import get_image_model, get_structured_model, get_text_model
@@ -21,7 +21,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
 EPS_MAX = 1.0  # EpsGreedyQPolicy maximum
 EPS_MIN = 0.1  # EpsGreedyQPolicy minimum
 EPS_STEPS = 200_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
-GAMMA = 0.5  # Discount factor
+GAMMA = 0.9  # Discount factor, importance of future reward
 LR = 0.00025  # Learning rate
 WARMUP_STEPS = 60_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55

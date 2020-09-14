@@ -13,7 +13,7 @@ This repository provides an altered version of the code for the DQNimb model pro
 ## Requirements
 
 * See `requirements.txt`
-* Latest version of https://github.com/keras-rl/keras-rl.git (pip version does not include all callbacks)
+* Latest version of [Keras-RL](https://github.com/keras-rl/keras-rl.git) (pip version does not include all callbacks)
 * CUDA 10.0
 * cuDNN 7.4
 
@@ -22,7 +22,7 @@ This repository provides an altered version of the code for the DQNimb model pro
 ```bash
 python train_model.py --model image --data famnist --imb-rate 0.04 --min-class 456 --maj-class 789 --training-steps 120000
 python train_model.py --model image --data mnist --imb-rate 0.04 --min-class 2 --maj-class 013456789 --training-steps 71000
-python train_model.py --model structured --data credit --imb-rate 0.01 --min-class 1 --maj-class 0 --training-steps 480000
+python train_model.py --model structured --data credit --imb-rate 0.01 --min-class 1 --maj-class 0 --training-steps 500000
 python train_model.py --model text --data imdb --imb-rate 0.1 --min-class 0 --maj-class 1 --training-steps 150000
 ```
 

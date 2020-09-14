@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-from keras.datasets import cifar10, fashion_mnist, imdb, mnist
-from keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.datasets import cifar10, fashion_mnist, imdb, mnist
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 
 def load_famnist():
