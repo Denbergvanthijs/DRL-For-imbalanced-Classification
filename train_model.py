@@ -21,10 +21,11 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
 EPS_MAX = 1.0  # EpsGreedyQPolicy maximum
 EPS_MIN = 0.1  # EpsGreedyQPolicy minimum
 EPS_STEPS = 200_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
-GAMMA = 0.9  # Discount factor, importance of future reward
+GAMMA = 0.95  # Discount factor, importance of future reward
 LR = 0.00025  # Learning rate
 WARMUP_STEPS = 60_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
+BATCH_SIZE = 32  # Minibatch size sampled from SequentialMemory
 MODE = "train"  # Train or test mode
 LOG_INTERVAL = 60_000  # Interval for logging, no effect on model performance
 FP_MODEL = "./models/credit.h5"  # Filepath to save the trained model
@@ -88,8 +89,8 @@ class ClassifyProcessor(Processor):
 processor = ClassifyProcessor()
 memory = SequentialMemory(limit=100_000, window_length=1)
 policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr="eps", value_max=EPS_MAX, value_min=EPS_MIN, value_test=.05, nb_steps=EPS_STEPS)
-dqn = DQNAgent(model=model, policy=policy, nb_actions=num_classes, memory=memory, processor=processor,
-               nb_steps_warmup=WARMUP_STEPS, gamma=GAMMA, target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1.)
+dqn = DQNAgent(model=model, policy=policy, nb_actions=num_classes, memory=memory, processor=processor, nb_steps_warmup=WARMUP_STEPS,
+               gamma=GAMMA, target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1., batch_size=BATCH_SIZE)
 
 dqn.compile(Adam(lr=LR), metrics=["mae"])
 env.model = model  # Set the prediction model for the environment. Used to calculate metrics

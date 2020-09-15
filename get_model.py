@@ -37,9 +37,9 @@ def get_structured_model(input_shape, output):
     model.add(Activation("relu"))
     model.add(Dense(256))
     model.add(Activation("relu"))
-    model.add(Dropout(0.3))
+    # model.add(Dropout(0.3))
     model.add(Dense(256))
     model.add(Activation("relu"))
-    model.add(Dropout(0.3))
+    # model.add(Dropout(0.3))
     model.add(Dense(output))
     return model
