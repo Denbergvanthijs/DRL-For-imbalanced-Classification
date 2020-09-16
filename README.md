@@ -7,6 +7,8 @@ This repository provides an altered version of the code for the DQNimb model pro
 * **get_model**: Define the network structure for the image, text or structured models.
 * **get_data**: Loading the balanced datasets and constructing the imbalanced datasets according to the imbalanced rate.
 * **alternatives**: Alternative models for comparison to the DQN model. Currently only supports creditcard fraud dataset.
+* **results**: Results on the [Credit Card Fraud Dataset](https://www.kaggle.com/mlg-ulb/creditcardfraud).
+* **utils**: Utilities, mainly for metrics.
 
 ## Requirements
 
