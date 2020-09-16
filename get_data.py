@@ -41,8 +41,7 @@ def load_cifar10():
     return X, y
 
 
-def load_imdb():
-    config = [5_000, 500]
+def load_imdb(config=(5_000, 500)):
     (x_train, y_train), (x_test, y_test) = imdb.load_data(num_words=config[0])
     X = np.concatenate([x_train, x_test])  # Combine train/test to make new train/test/validate later on
     y = np.concatenate([y_train, y_test])
@@ -65,7 +64,7 @@ def load_creditcard(fp="./data/creditcard.csv"):
     return X.values, y.values  # Numpy arrays
 
 
-def load_data(data_source, imb_rate, min_class, maj_class, seed=None):
+def load_data(data_source, imb_rate, min_class, maj_class, seed=None, normalization=False):
     """
     Loads data from the `data_source`. Imbalances the data and divides the data into train, test and validation sets.
     The imbalance rate of each individual dataset is the same as the `imb_rate`.
@@ -89,6 +88,14 @@ def load_data(data_source, imb_rate, min_class, maj_class, seed=None):
     # stratify=y to ensure class balance is kept
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=seed, stratify=y)
     X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=seed, stratify=y_test)
+
+    if data_source == "credit" and normalization:
+        # Normalize data. This does not happen in load_creditcard to prevent train/test/val leakage
+        # Other data sources are already normalized. RGB values are always in range 0 to 255.
+        mean, std = np.mean(X_train, axis=0), np.std(X_train, axis=0)
+        for X in (X_train, X_test, X_val):  # Normalize to Z-score
+            X -= mean
+            X /= std
 
     p_data, p_train, p_test, p_val = [((y == 1).sum(), (y == 1).sum() / (y == 0).sum()) for y in [y, y_train, y_test, y_val]]
     print(f"Imbalance ratio `p`:\n"
