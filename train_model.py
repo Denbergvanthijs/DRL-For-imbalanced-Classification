@@ -3,7 +3,6 @@ import os
 
 import numpy as np
 from keras.optimizers import Adam
-from pandas import unique
 from rl.agents.dqn import DQNAgent
 from rl.core import Processor
 from rl.memory import SequentialMemory
