@@ -25,7 +25,10 @@ GAMMA = 0.95  # Discount factor, importance of future reward
 LR = 0.00025  # Learning rate
 WARMUP_STEPS = 60_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
+MEMORY_SIZE = 100_000  # Size of the SequentialMemory
 BATCH_SIZE = 32  # Minibatch size sampled from SequentialMemory
+DOUBLE_DQN = False  # To enable or disable DDQN as proposed by https://arxiv.org/pdf/1509.06461.pdf
+NORMALIZATION = False  # Normalize the Kaggle Credit Card Fraud dataset?
 MODE = "train"  # Train or test mode
 LOG_INTERVAL = 60_000  # Interval for logging, no effect on model performance
 FP_MODEL = "./models/credit.h5"  # Filepath to save the trained model
@@ -46,21 +49,20 @@ training_steps = args.training_steps
 min_class = list(map(int, args.min_class))  # String to list of integers
 maj_class = list(map(int, args.maj_class))  # String to list of integers
 
-X_train, y_train, X_test, y_test, X_val, y_val = load_data(data_source, imb_rate, min_class, maj_class)
+X_train, y_train, X_test, y_test, X_val, y_val = load_data(data_source, imb_rate, min_class, maj_class, normalization=NORMALIZATION)
 print(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 print(f"Minority: {min_class}, Majority: {maj_class}")
 
 input_shape = X_train.shape[1:]
-num_classes = unique(y_test).size
 env = ClassifyEnv(MODE, imb_rate, X_train, y_train, X_test, y_test)
 
 if args.model == "image":
-    model = get_image_model(input_shape, num_classes)
+    model = get_image_model(input_shape)
 elif args.model == "text":
-    input_shape = [5_000, 500]
-    model = get_text_model(input_shape, num_classes)
+    input_shape = (5_000, 500)
+    model = get_text_model(input_shape)
 else:
-    model = get_structured_model(input_shape, num_classes)
+    model = get_structured_model(input_shape)
 
 # print(model.summary())
 
@@ -79,18 +81,17 @@ class ClassifyProcessor(Processor):
             return batch.reshape((-1, input_shape[1]))
 
         batch = batch.reshape((-1,) + input_shape)
-        processed_batch = batch.astype("float32") / 1.
-        return processed_batch
+        return batch.astype("float32") / 1
 
     def process_reward(self, reward):
-        return np.clip(reward, -1., 1.)
+        return np.clip(reward, -1, 1)
 
 
 processor = ClassifyProcessor()
-memory = SequentialMemory(limit=100_000, window_length=1)
-policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr="eps", value_max=EPS_MAX, value_min=EPS_MIN, value_test=.05, nb_steps=EPS_STEPS)
-dqn = DQNAgent(model=model, policy=policy, nb_actions=num_classes, memory=memory, processor=processor, nb_steps_warmup=WARMUP_STEPS,
-               gamma=GAMMA, target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1., batch_size=BATCH_SIZE)
+memory = SequentialMemory(limit=MEMORY_SIZE, window_length=1)
+policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr="eps", value_max=EPS_MAX, value_min=EPS_MIN, value_test=0.05, nb_steps=EPS_STEPS)
+dqn = DQNAgent(model=model, policy=policy, nb_actions=2, memory=memory, processor=processor, nb_steps_warmup=WARMUP_STEPS, gamma=GAMMA,
+               target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1, batch_size=BATCH_SIZE, enable_double_dqn=DOUBLE_DQN)
 
 dqn.compile(Adam(lr=LR), metrics=["mae"])
 env.model = model  # Set the prediction model for the environment. Used to calculate metrics

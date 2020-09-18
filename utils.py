@@ -10,12 +10,13 @@ from tensorflow.keras.models import load_model
 from get_data import load_data
 
 
-def make_predictions(model, X_test):
+def make_predictions(model, X_test) -> list:
     """Input a trained model and X data, returns predictions on minority (1) or majority (0)."""
     return [np.argmax(x) for x in model.predict(X_test)]
 
 
-def calculate_metrics(y_true, y_pred):
+def calculate_metrics(y_true, y_pred) -> dict:
+    """Calculate metrics for a given y_true and y_pred."""
     # Source: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html
     TN, FP, FN, TP = confusion_matrix(y_true, y_pred).ravel()  # Minority: positive, Majority: negative
 
@@ -33,21 +34,26 @@ def calculate_metrics(y_true, y_pred):
             "TP": TP, "TN": TN, "FP": FP, "FN": FN}
 
 
-def plot_conf_matrix(y_true, y_pred):
-    """Plots confusion matrix. True labels on x-axis. Predicted labels on y-axis."""
-    info = calculate_metrics(y_true, y_pred)
+def plot_conf_matrix(y_true, y_pred) -> dict:
+    """
+    Plots confusion matrix. True labels on x-axis. Predicted labels on y-axis.
+    Returns stats from `calculate_metrics()`.
+    """
+    stats = calculate_metrics(y_true, y_pred)
     ticklabels = ("Minority", "Majority")
 
     print(classification_report(y_true, y_pred, target_names=ticklabels[::-1]))
-    print("".join([f"{k}: {v:.6f} " for k, v in info.items()]))
+    print("".join([f"{k}: {v:.6f} " for k, v in stats.items()]))
 
-    sns.heatmap(((info.get("TP"), info.get("FN")), (info.get("FP"), info.get("TN"))), annot=True,
-                fmt="_d", cmap="viridis", xticklabels=ticklabels, yticklabels=ticklabels)
+    sns.heatmap(((stats.get("TP"), stats.get("FN")), (stats.get("FP"), stats.get("TN"))),
+                annot=True, fmt="_d", cmap="viridis", xticklabels=ticklabels, yticklabels=ticklabels)
 
-    plt.title(f"Confusion matrix\nMCC: {info['MCC']:.6f}")
+    plt.title(f"Confusion matrix\nMCC: {stats['MCC']:.6f}")
     plt.xlabel("Predicted labels")
     plt.ylabel("True labels")
     plt.show()
+
+    return stats
 
 
 if __name__ == "__main__":

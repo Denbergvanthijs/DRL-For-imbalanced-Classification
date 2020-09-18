@@ -19,9 +19,9 @@ class ClassifyEnv(gym.Env):
         self.y_train = y_train
         self.X_test = X_test  # Testdata used every `metrics_interval`-steps to calculate metrics
         self.y_test = y_test
-        self.id = np.arange(self.X_train.shape[0])  # List of IDs to connect X and y data
 
         self.X_len = self.X_train.shape[0]
+        self.id = np.arange(self.X_len)  # List of IDs to connect X and y data
 
         self.action_space = spaces.Discrete(2)  # 2 classes: Minority and majority
         self.episode_step = 0  # Episode step, resets every episode
@@ -41,38 +41,38 @@ class ClassifyEnv(gym.Env):
         Every `metrics_interval`-steps metrics will be logged for Tensorboard.
         """
         self.step_number += 1
-        info = {}
+        stats = {}
         terminal = False
-        curr_answer = self.y_train[self.id[self.episode_step]]
+        curr_y_true = self.y_train[self.id[self.episode_step]]
+        self.episode_step += 1
 
-        if action == curr_answer:  # Correct action
-            if curr_answer:  # Minority
+        if action == curr_y_true:  # Correct action
+            if curr_y_true:  # Minority
                 reward = 1
                 # terminal = True
             else:  # Majority
                 reward = self.imb_rate
+
         else:  # Incorrect action
-            if curr_answer:  # Minority
+            if curr_y_true:  # Minority
                 reward = -1
                 if self.mode == "train":
                     terminal = True  # Stop episode when minority class is misclassified
             else:  # Majority
                 reward = -self.imb_rate
 
-        self.episode_step += 1
-
         if self.step_number % self.metrics_interval == 0:  # Collect metrics every `metrics_interval`-steps
             y_pred = make_predictions(self.model, self.X_test)
-            info = calculate_metrics(self.y_test, y_pred)
+            stats = calculate_metrics(self.y_test, y_pred)
 
-            for k, v in info.items():
+            for k, v in stats.items():
                 summary = Summary(value=[Summary.Value(tag=k, simple_value=v)])
                 self.writer.add_summary(summary, global_step=self.step_number)
 
         if self.episode_step == self.X_len - 1:
             terminal = True
 
-        return self.X_train[self.id[self.episode_step]], reward, terminal, info
+        return self.X_train[self.id[self.episode_step]], reward, terminal, stats
 
     def reset(self):
         """returns: (states, observations)."""
