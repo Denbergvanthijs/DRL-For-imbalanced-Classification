@@ -49,7 +49,7 @@ class ClassifyEnv(gym.Env):
         if action == curr_y_true:  # Correct action
             if curr_y_true:  # Minority
                 reward = 1
-                # terminal = True
+                terminal = True
             else:  # Majority
                 reward = self.imb_rate
 
