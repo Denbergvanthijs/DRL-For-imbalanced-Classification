@@ -122,6 +122,14 @@ TN = [56848, 56844, 56850, 56851, 56851]
 FP = [15, 19, 13, 12, 12]  # 14; 2.6
 FN = [22, 23, 18, 27, 19]  # 21; 3.2
 
+# 5 runs on 21-09-2020 {12:18, 15:08}
+# Difference: EPS_MIN = 0.05; LR = 0.001; DOUBLE_DQN = True; NORMALIZATION = True
+
+TP = [81, 77, 86, 78, 85]
+TN = [56854, 56848, 56450, 56852, 56802]
+FP = [9, 15, 413, 11, 61]  # 101; 156.8
+FN = [18, 22, 13, 21, 14]  # 17; 3.6
+
 avg = [np.mean(x, dtype=int) for x in [TP, TN, FP, FN]]
 std = [np.std(x) for x in [TP, TN, FP, FN]]
 print([f"{mu}, {sigma:.4f}" for mu, sigma in zip(avg, std)])
