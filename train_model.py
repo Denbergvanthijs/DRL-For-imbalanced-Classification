@@ -20,14 +20,14 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
 EPS_MAX = 1.0  # EpsGreedyQPolicy maximum
 EPS_MIN = 0.05  # EpsGreedyQPolicy minimum
 EPS_STEPS = 200_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
-GAMMA = 0.95  # Discount factor, importance of future reward
+GAMMA = 0.5  # Discount factor, importance of future reward
 LR = 0.001  # Learning rate
 WARMUP_STEPS = 60_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
 MEMORY_SIZE = 100_000  # Size of the SequentialMemory
 BATCH_SIZE = 32  # Minibatch size sampled from SequentialMemory
 DOUBLE_DQN = True  # To enable or disable DDQN as proposed by https://arxiv.org/pdf/1509.06461.pdf
-NORMALIZATION = True  # Normalize the Kaggle Credit Card Fraud dataset?
+NORMALIZATION = False  # Normalize the Kaggle Credit Card Fraud dataset?
 MODE = "train"  # Train or test mode
 LOG_INTERVAL = 60_000  # Interval for logging, no effect on model performance
 FP_MODEL = "./models/credit.h5"  # Filepath to save the trained model
@@ -53,7 +53,7 @@ print(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 print(f"Minority: {min_class}, Majority: {maj_class}")
 
 input_shape = X_train.shape[1:]
-env = ClassifyEnv(MODE, imb_rate, X_train, y_train, X_test, y_test)
+env = ClassifyEnv(MODE, imb_rate, X_train, y_train, X_val, y_val)
 
 if args.model == "image":
     model = get_image_model(input_shape)
@@ -99,5 +99,5 @@ dqn.target_model.save(FP_MODEL)
 
 # Validate on validation dataset
 trained_model = load_model(FP_MODEL)  # Load the just saved model
-y_pred = make_predictions(trained_model, X_val)
-plot_conf_matrix(y_val, y_pred)
+y_pred = make_predictions(trained_model, X_test)
+plot_conf_matrix(y_test, y_pred)
