@@ -2,6 +2,7 @@
 data/
 logs/
 models/
+tutorial.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

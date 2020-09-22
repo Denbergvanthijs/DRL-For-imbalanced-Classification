@@ -13,23 +13,23 @@ def load_image(data_source: str):
     reshape_shape = -1, 28, 28, 1
 
     if data_source == "mnist":
-        (x_train, y_train), (x_test, y_test) = mnist.load_data()
+        (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
     elif data_source == "famnist":
-        (x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
+        (X_train, y_train), (X_test, y_test) = fashion_mnist.load_data()
 
     elif data_source == "cifar10":
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+        (X_train, y_train), (X_test, y_test) = cifar10.load_data()
         reshape_shape = -1, 32, 32, 3
 
     else:
         raise ValueError("No valid `data_source`.")
 
-    X = np.concatenate((x_train, x_test))  # Combine train/test to make new train/test/validate later on
+    X = np.concatenate((X_train, X_test))  # Combine train/test to make new train/test/validate later on
     y = np.concatenate((y_train, y_test))
 
     X = X.reshape(reshape_shape)
-    X = X / 255  # /= not available when casting int to float: https://stackoverflow.com/a/48948461/10603874
+    X = X / 255  # /= is not available when casting int to float: https://stackoverflow.com/a/48948461/10603874
     y = y.reshape(y.shape[0], )
 
     return X, y
@@ -37,8 +37,8 @@ def load_image(data_source: str):
 
 def load_imdb(config=(5_000, 500)):
     """Loads the IMDB dataset. Returns X, y."""
-    (x_train, y_train), (x_test, y_test) = imdb.load_data(num_words=config[0])
-    X = np.concatenate((x_train, x_test))  # Combine train/test to make new train/test/validate later on
+    (X_train, y_train), (X_test, y_test) = imdb.load_data(num_words=config[0])
+    X = np.concatenate((X_train, X_test))  # Combine train/test to make new train/test/validate later on
     y = np.concatenate((y_train, y_test))
 
     X = pad_sequences(X, maxlen=config[1])
@@ -64,6 +64,7 @@ def load_data(data_source: str, imb_rate: float, min_class: list, maj_class: lis
     """
     Loads data from the `data_source`. Imbalances the data and divides the data into train, test and validation sets.
     The imbalance rate of each individual dataset is the same as the given `imb_rate`.
+    The seed for the test dataset is already set to ensure test data is always the same.
     """
     if data_source in ("famnist", "mnist", "cifar10"):
         X, y = load_image(data_source=data_source)
@@ -77,8 +78,10 @@ def load_data(data_source: str, imb_rate: float, min_class: list, maj_class: lis
     X_imb, y_imb = get_imb_data(X, y, imb_rate, min_class, maj_class)  # Imbalance the data
 
     # 60 / 20 / 20 for train / test / validate; stratify=y to ensure class balance is kept
-    X_train, X_test, y_train, y_test = train_test_split(X_imb, y_imb, test_size=0.4, random_state=seed, stratify=y_imb)
-    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=seed, stratify=y_test)
+    # Seed for train / test is always 42 to ensure test data is always the same
+    # Seed for train / validate is not set to ensure random split
+    X_rest, X_test, y_rest, y_test = train_test_split(X_imb, y_imb, test_size=0.2, random_state=42, stratify=y_imb)
+    X_train, X_val, y_train, y_val = train_test_split(X_rest, y_rest, test_size=0.25, random_state=seed, stratify=y_rest)
 
     if data_source == "credit" and normalization:
         # Normalize data. This does not happen in load_creditcard to prevent train/test/val leakage
@@ -128,5 +131,5 @@ def get_imb_data(X, y, imb_rate: float, min_class: list, maj_class: list):
 
 
 if __name__ == "__main__":
-    X_train, y_train, X_test, y_test, X_val, y_val = load_data("credit", 0.01, [1], [0], seed=42)
+    X_train, y_train, X_test, y_test, X_val, y_val = load_data("credit", 0.01, [1], [0])
     print([i.shape for i in (X_train, y_train, X_test, y_test, X_val, y_val)])
