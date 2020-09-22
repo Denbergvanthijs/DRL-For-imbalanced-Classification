@@ -12,6 +12,7 @@ This repository provides an altered version of the code for the DQNimb model pro
 
 ## Requirements
 
+* Python [3.7.9](https://www.python.org/downloads/release/python-379/)
 * `pip install -r requirements.txt`
 * Latest version of [Keras-RL](https://github.com/keras-rl/keras-rl.git) (pip version does not include all callbacks)
 * CUDA 10.0
