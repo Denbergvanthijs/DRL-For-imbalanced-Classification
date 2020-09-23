@@ -1,6 +1,7 @@
 # Trained models
 data/
 logs/
+logs_alt/
 models/
 tutorial.py
 
