@@ -123,12 +123,20 @@ FP = [15, 19, 13, 12, 12]  # 14; 2.6
 FN = [22, 23, 18, 27, 19]  # 21; 3.2
 
 # 5 runs on 21-09-2020 {12:18, 15:08}
-# Difference: EPS_MIN = 0.05; LR = 0.001; DOUBLE_DQN = True; NORMALIZATION = True
+# Difference: EPS_MIN = 0.05; LR = 0.001; DOUBLE_DQN = True; NORMALIZATION = True; GAMMA = 0.95
 
 TP = [81, 77, 86, 78, 85]
 TN = [56854, 56848, 56450, 56852, 56802]
 FP = [9, 15, 413, 11, 61]  # 101; 156.8
 FN = [18, 22, 13, 21, 14]  # 17; 3.6
+
+# 5 runs on 22-09-2020 {10:51, 12:10}
+# Difference: EPS_MIN = 0.05; LR = 0.001; DOUBLE_DQN = True; Fixed test dataset
+
+TP = [70, 71, 77, 76, 77]
+TN = [56841, 56843, 56836, 56835, 56827]
+FP = [23, 21, 28, 29, 37]  # 27; 5.5
+FN = [28, 27, 21, 22, 21]  # 23; 3.1
 
 avg = [np.mean(x, dtype=int) for x in [TP, TN, FP, FN]]
 std = [np.std(x) for x in [TP, TN, FP, FN]]

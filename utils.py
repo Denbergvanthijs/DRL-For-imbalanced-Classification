@@ -60,7 +60,7 @@ if __name__ == "__main__":
     # TODO: Determine why CPU is faster than GPU
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
 
-    imb_rate = 0.0005  # Imbalance rate
+    imb_rate = 0.01  # Imbalance rate
     min_class = [1]  # Minority classes, must be same as trained model
     maj_class = [0]  # Majority classes, must be same as trained model
     datasource = "credit"  # The dataset to be selected
@@ -71,8 +71,8 @@ if __name__ == "__main__":
     X_train, y_train, X_test, y_test, X_val, y_val = load_data(datasource, imb_rate, min_class, maj_class)  # Load all data
 
     model = load_model(fp_model)
-    y_pred = make_predictions(model, X_val)
-    plot_conf_matrix(y_val, y_pred)  # Plot confidence matrix based on test dataset
+    y_pred = make_predictions(model, X_test)
+    plot_conf_matrix(y_test, y_pred)  # Plot confidence matrix based on test dataset
 
     # y_baseline = np.ones(len(y_pred), dtype=int)  # Baseline, everything is Majority
     # plot_conf_matrix(y_val, y_baseline)
