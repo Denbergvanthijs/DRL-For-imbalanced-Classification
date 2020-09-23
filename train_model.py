@@ -9,6 +9,7 @@ from rl.memory import SequentialMemory
 from rl.policy import EpsGreedyQPolicy, LinearAnnealedPolicy
 from tensorflow.keras.models import load_model
 
+from callbacks import Metrics
 from get_data import load_data
 from get_model import get_image_model, get_structured_model, get_text_model
 from ICMDP_Env import ClassifyEnv
@@ -53,7 +54,7 @@ print(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 print(f"Minority: {min_class}, Majority: {maj_class}")
 
 input_shape = X_train.shape[1:]
-env = ClassifyEnv(MODE, imb_rate, X_train, y_train, X_val, y_val)
+env = ClassifyEnv(MODE, imb_rate, X_train, y_train)
 
 if args.model == "image":
     model = get_image_model(input_shape)
@@ -62,8 +63,6 @@ elif args.model == "text":
     model = get_text_model(input_shape)
 else:
     model = get_structured_model(input_shape)
-
-# print(model.summary())
 
 
 class ClassifyProcessor(Processor):
@@ -89,15 +88,16 @@ class ClassifyProcessor(Processor):
 processor = ClassifyProcessor()
 memory = SequentialMemory(limit=MEMORY_SIZE, window_length=1)
 policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr="eps", value_max=EPS_MAX, value_min=EPS_MIN, value_test=0.05, nb_steps=EPS_STEPS)
+
 dqn = DQNAgent(model=model, policy=policy, nb_actions=2, memory=memory, processor=processor, nb_steps_warmup=WARMUP_STEPS, gamma=GAMMA,
                target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1, batch_size=BATCH_SIZE, enable_double_dqn=DOUBLE_DQN)
+dqn.compile(Adam(lr=LR))
 
-dqn.compile(Adam(lr=LR), metrics=["mae"])
-env.model = model  # Set the prediction model for the environment. Used to calculate metrics
-dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL)
+metrics = Metrics(X_val, y_val)
+dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL, callbacks=[metrics])
 dqn.target_model.save(FP_MODEL)
 
-# Validate on validation dataset
+# Validate on test dataset
 trained_model = load_model(FP_MODEL)  # Load the just saved model
 y_pred = make_predictions(trained_model, X_test)
 plot_conf_matrix(y_test, y_pred)
