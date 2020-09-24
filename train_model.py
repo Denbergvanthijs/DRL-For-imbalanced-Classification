@@ -17,11 +17,12 @@ from utils import make_predictions, plot_conf_matrix
 
 # TODO: Determine why CPU is faster than GPU
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
+os.environ["TF_XLA_FLAGS"] = "--tf_xla_cpu_global_jit"  # Support for Accelerated Linear Algebra (XLA)
 
 EPS_MAX = 1.0  # EpsGreedyQPolicy maximum
 EPS_MIN = 0.05  # EpsGreedyQPolicy minimum
 EPS_STEPS = 200_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
-GAMMA = 0.5  # Discount factor, importance of future reward
+GAMMA = 0.95  # Discount factor, importance of future reward
 LR = 0.001  # Learning rate
 WARMUP_STEPS = 60_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55

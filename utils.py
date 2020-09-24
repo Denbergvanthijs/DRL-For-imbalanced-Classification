@@ -25,13 +25,15 @@ def calculate_metrics(y_true, y_pred) -> dict:
     recall = TP / (TP + FN)  # Sensitivity, True Positive Rate (TPR)
     specificity = TN / (TN + FP)  # Specificity, selectivity, True Negative Rate (TNR)
 
-    G_mean = np.sqrt(recall * specificity)  # Geometric mean of recall and specificity, defined in paper
-    F_measure = np.sqrt(recall * precision)  # F-measure of recall and precision, defined in paper
-    MCC = (TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))  # Matthews Corr. Coefficient
-    MAE = mean_absolute_error(y_true, y_pred)  # Mean absolute error
+    pXr = precision * recall  # Precision times recall
+    pPlusr = precision + recall  # Precision plus recall
 
-    return {"gmean": G_mean, "fmeasure": F_measure, "MCC": MCC, "MAE": MAE, "precision": precision, "recall": recall,
-            "TP": TP, "TN": TN, "FP": FP, "FN": FN}
+    G_mean = np.sqrt(recall * specificity)  # Geometric mean of recall and specificity, as defined in paper
+    Fdot5 = 1.25 * (pXr / (0.25 * pPlusr))  # β of 0.5
+    F1 = 2 * (pXr / pPlusr)  # Default F measure
+    F2 = 5 * (pXr / (4 * pPlusr))  # β of 2
+
+    return {"Gmean": G_mean, "Fdot5": Fdot5, "F1": F1, "F2": F2, "TP": TP, "TN": TN, "FP": FP, "FN": FN}
 
 
 def plot_conf_matrix(y_true, y_pred) -> dict:
@@ -48,7 +50,7 @@ def plot_conf_matrix(y_true, y_pred) -> dict:
     sns.heatmap(((stats.get("TP"), stats.get("FN")), (stats.get("FP"), stats.get("TN"))),
                 annot=True, fmt="_d", cmap="viridis", xticklabels=ticklabels, yticklabels=ticklabels)
 
-    plt.title(f"Confusion matrix\nMCC: {stats['MCC']:.6f}")
+    plt.title(f"Confusion matrix\nF1: {stats['F1']:.6f}")
     plt.xlabel("Predicted labels")
     plt.ylabel("True labels")
     plt.show()
@@ -64,7 +66,7 @@ if __name__ == "__main__":
     min_class = [1]  # Minority classes, must be same as trained model
     maj_class = [0]  # Majority classes, must be same as trained model
     datasource = "credit"  # The dataset to be selected
-    fp_model = "./models/credit.h5"  # Filepath to the .h5-model
+    fp_model = "./models/20200924_FN20_FP11.h5"  # Filepath to the .h5-model
 
     # Remove classes ∉ {min_class, maj_class}, imbalance the dataset
     # Make sure the same seed is used as during training to ensure no data contamination

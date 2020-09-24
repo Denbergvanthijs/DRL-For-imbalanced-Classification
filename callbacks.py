@@ -14,7 +14,7 @@ class Metrics(Callback):
         self.interval = interval
         self.FN_bound = FN_bound
         self.FP_bound = FP_bound
-        self.writer = FileWriter(f"./logs/{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+        self.writer = FileWriter(f"./logs/{datetime.now().strftime('%Y%m%d_%H%M%S')}.h5")
 
     def on_step_end(self, episode_step, logs):
         """Calculate metrics every `interval`-steps. Save target_model if conditions are met."""
