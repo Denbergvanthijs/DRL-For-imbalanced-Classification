@@ -86,10 +86,10 @@ def load_data(data_source: str, imb_rate: float, min_class: list, maj_class: lis
     if data_source == "credit" and normalization:
         # Normalize data. This does not happen in load_creditcard to prevent train/test/val leakage
         # Other data sources are already normalized. RGB values are always in range 0 to 255.
-        mean, std = np.mean(X_train, axis=0), np.std(X_train, axis=0)
-        for X in (X_train, X_test, X_val):  # Normalize to Z-score
-            X -= mean
-            X /= std
+        mini, maxi = X_train.min(axis=0), X_train.max(axis=0)
+        for X in (X_train, X_test, X_val):  # Normalize to min-max
+            X -= mini
+            X /= maxi-mini
 
     if print_stats:
         p_data, p_train, p_test, p_val = [((y == 1).sum(), (y == 1).sum() / (y == 0).sum()) for y in (y_imb, y_train, y_test, y_val)]
