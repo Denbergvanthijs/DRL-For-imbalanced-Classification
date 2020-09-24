@@ -19,6 +19,11 @@ This repository provides an altered version of the code for the DQNimb model pro
 * CUDA 10.0
 * cuDNN 7.4
 
+Or via conda:
+
+* `sudo conda install tensorflow=1.14.0 numpy=1.16.2 keras=2.3.1 h5py=2.10.0 matplotlib pandas seaborn`
+* `pip install sklearn xgboost gym==0.12.1 keras-rl==0.4.2`
+
 ## Quick Start
 
 ```bash
