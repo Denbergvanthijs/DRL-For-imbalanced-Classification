@@ -8,6 +8,7 @@ from rl.agents.dqn import DQNAgent
 from rl.core import Processor
 from rl.memory import SequentialMemory
 from rl.policy import EpsGreedyQPolicy, LinearAnnealedPolicy
+from tqdm import tqdm
 
 from callbacks import Metrics
 from get_data import load_data
@@ -63,8 +64,9 @@ with open(f"./logs_alt/DQN_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", 'w',
     writer = csv.DictWriter(f, fieldnames=columns)
     writer.writeheader()
 
-    for i in range(N_REPETITIONS):
-        X_train, y_train, X_test, y_test, X_val, y_val = load_data("credit", imb_rate, min_class, maj_class, normalization=NORMALIZATION)
+    for i in tqdm(range(N_REPETITIONS)):
+        X_train, y_train, X_test, y_test, X_val, y_val = load_data(
+            "credit", imb_rate, min_class, maj_class, normalization=NORMALIZATION, print_stats=False)
         env = ClassifyEnv(MODE, imb_rate, X_train, y_train)
         memory = SequentialMemory(limit=MEMORY_SIZE, window_length=1)
         policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr="eps", value_max=EPS_MAX,
