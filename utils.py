@@ -3,8 +3,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from sklearn.metrics import (classification_report, confusion_matrix,
-                             mean_absolute_error)
+from sklearn.metrics import (classification_report, confusion_matrix, f1_score,
+                             fbeta_score, mean_absolute_error)
 from tensorflow.keras.models import load_model
 
 from get_data import load_data
@@ -21,17 +21,13 @@ def calculate_metrics(y_true, y_pred) -> dict:
     TN, FP, FN, TP = confusion_matrix(y_true, y_pred).ravel()  # Minority: positive, Majority: negative
 
     # Source: https://en.wikipedia.org/wiki/Precision_and_recall
-    precision = TP / (TP + FP)  # Positive Predictive Value
     recall = TP / (TP + FN)  # Sensitivity, True Positive Rate (TPR)
     specificity = TN / (TN + FP)  # Specificity, selectivity, True Negative Rate (TNR)
 
-    pXr = precision * recall  # Precision times recall
-    pPlusr = precision + recall  # Precision plus recall
-
     G_mean = np.sqrt(recall * specificity)  # Geometric mean of recall and specificity, as defined in paper
-    Fdot5 = 1.25 * (pXr / (0.25 * pPlusr))  # β of 0.5
-    F1 = 2 * (pXr / pPlusr)  # Default F measure
-    F2 = 5 * (pXr / (4 * pPlusr))  # β of 2
+    Fdot5 = fbeta_score(y_true, y_pred, beta=0.5, zero_division=0)  # β of 0.5
+    F1 = f1_score(y_true, y_pred, zero_division=0)  # Default F-measure
+    F2 = fbeta_score(y_true, y_pred, beta=2, zero_division=0)  # β of 2
 
     return {"Gmean": G_mean, "Fdot5": Fdot5, "F1": F1, "F2": F2, "TP": TP, "TN": TN, "FP": FP, "FN": FN}
 
