@@ -64,6 +64,7 @@ with open(f"./logs_alt/DQN_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", 'w',
     print(f"Writing files to: {f.name}")
     writer = csv.DictWriter(f, fieldnames=columns)
     writer.writeheader()
+    f.flush()
 
     for i in tqdm(range(N_REPETITIONS)):
         X_train, y_train, X_test, y_test, X_val, y_val = load_data(
@@ -82,6 +83,7 @@ with open(f"./logs_alt/DQN_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", 'w',
         y_pred = make_predictions(dqn.target_model, X_test)
         stats = calculate_metrics(y_test, y_pred)  # Get stats as dictionairy
         writer.writerow(stats)  # Write dictionairy as row
+        f.flush()  # Save results to file inbetween iterations as to not lose results
 
         if not i % LOG_EVERY:
             print(f"{i}: FN: {stats.get('FN')}, FP: {stats.get('FP')}")
