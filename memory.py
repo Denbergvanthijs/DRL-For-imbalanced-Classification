@@ -2,7 +2,7 @@ import itertools
 import random
 from collections import deque
 
-from rl.memory import Memory
+from rl.memory import Memory, Experience
 
 
 class PriorityMemory(Memory):
@@ -59,18 +59,19 @@ class PriorityMemory(Memory):
 
         if self.last_class is not None:  # If there's ever been an experience
             if self.last_class:  # If the last experience was a minority, set s' to the current state
-                exp = self.minority_experiences.pop()
-                exp[3] = observation  # s' is set to the current observation
+                s, a, r, _, t = self.minority_experiences.pop()
+                exp = Experience(state0=s, action=a, reward=r, state1=observation, terminal1=t)  # s' is set to the current observation
                 self.minority_experiences.append(exp)
             else:
-                exp = self.majority_experiences.pop()
-                exp[3] = observation  # s' is set to the current observation
+                s, a, r, _, t = self.majority_experiences.pop()
+                exp = Experience(state0=s, action=a, reward=r, state1=observation, terminal1=t)  # s' is set to the current observation
                 self.majority_experiences.append(exp)
 
+        exp = Experience(state0=observation, action=action, reward=reward, state1=None, terminal1=terminal)
         if current_class:  # Add current experience in the deque, check if experience is minority or majority
-            self.minority_experiences.append([observation, action, reward, None, terminal])  # None is placeholder for s'
+            self.minority_experiences.append(exp)  # None is placeholder for s'
         else:
-            self.majority_experiences.append([observation, action, reward, None, terminal])
+            self.majority_experiences.append(exp)
 
         self.last_class = current_class  # True if current exp is minority, False if not
 

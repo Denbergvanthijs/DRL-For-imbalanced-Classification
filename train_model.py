@@ -14,6 +14,7 @@ from get_data import load_data
 from get_model import get_image_model, get_structured_model, get_text_model
 from ICMDP_Env import ClassifyEnv
 from utils import make_predictions, plot_conf_matrix
+from memory import PriorityMemory
 
 # TODO: Determine why CPU is faster than GPU
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
@@ -87,7 +88,8 @@ class ClassifyProcessor(Processor):
 
 
 processor = ClassifyProcessor()
-memory = SequentialMemory(limit=MEMORY_SIZE, window_length=1)
+# memory = SequentialMemory(limit=MEMORY_SIZE, window_length=1)
+memory = PriorityMemory(limit=MEMORY_SIZE, window_length=1)
 policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr="eps", value_max=EPS_MAX, value_min=EPS_MIN, value_test=0.05, nb_steps=EPS_STEPS)
 
 dqn = DQNAgent(model=model, policy=policy, nb_actions=2, memory=memory, processor=processor, nb_steps_warmup=WARMUP_STEPS, gamma=GAMMA,
