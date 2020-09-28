@@ -1,22 +1,34 @@
 import itertools
+import math
 import random
 from collections import deque
 
-from rl.memory import Memory, Experience
+from rl.memory import Experience, Memory
 
 
 class PriorityMemory(Memory):
     """
-    Samples 50/50 minority and majority samples.
+    Samples minority and majority samples.
     Partly based on keras-rl's SequentialMemory.
     """
 
-    def __init__(self, limit, **kwargs):
+    def __init__(self, limit, minority_chance: float = 0.5, **kwargs):
         super(PriorityMemory, self).__init__(**kwargs)
 
-        self.limit = limit
-        self.minority_experiences = deque(maxlen=limit//2)
-        self.majority_experiences = deque(maxlen=limit//2)
+        if isinstance(limit, (tuple, int)):
+            # TODO: Add checking for tuple length.
+            self.limit = limit
+        else:
+            raise TypeError("limit must be a tuple of length 2 or an integer.")
+
+        if isinstance(self.limit, int):
+            self.minority_experiences = deque(maxlen=limit//2)
+            self.majority_experiences = deque(maxlen=limit//2)
+        else:
+            self.minority_experiences = deque(maxlen=limit[0])
+            self.majority_experiences = deque(maxlen=limit[1])
+
+        self.minority_chance = minority_chance
         self.last_class = None
 
     def sample(self, batch_size: int, batch_idxs=None):
@@ -28,8 +40,7 @@ class PriorityMemory(Memory):
             # Since last state has no next state, batch_size can't be equal to memory size
             raise ValueError("Sample larger or equal to memory")
 
-        batch_min = batch_size // 2 + batch_size % 2
-        batch_maj = batch_size // 2
+        batch_min, batch_maj = self.calculate_batch_sizes(batch_size, self.minority_chance)
         minibatch = []
 
         len_min, len_maj = self.useful_length  # Amount of usable experiences per class
@@ -55,6 +66,9 @@ class PriorityMemory(Memory):
         """Append experience to memory. Update the next state of the last appended experience."""
         super(PriorityMemory, self).append(observation, action, reward, terminal, training=training)
 
+        if not training:  # If testing
+            return
+
         current_class = True if reward in (-1, 1) else False
 
         if self.last_class is not None:  # If there's ever been an experience
@@ -67,9 +81,10 @@ class PriorityMemory(Memory):
                 exp = Experience(state0=s, action=a, reward=r, state1=observation, terminal1=t)  # s' is set to the current observation
                 self.majority_experiences.append(exp)
 
+        # None is placeholder for s'
         exp = Experience(state0=observation, action=action, reward=reward, state1=None, terminal1=terminal)
         if current_class:  # Add current experience in the deque, check if experience is minority or majority
-            self.minority_experiences.append(exp)  # None is placeholder for s'
+            self.minority_experiences.append(exp)
         else:
             self.majority_experiences.append(exp)
 
@@ -95,6 +110,12 @@ class PriorityMemory(Memory):
 
         return len_min, len_maj
 
+    @staticmethod
+    def calculate_batch_sizes(batch_size: int, minority_chance: float):
+        batch_min = math.ceil(minority_chance * batch_size)
+        batch_maj = batch_size - batch_min
+        return batch_min, batch_maj
+
     def get_config(self):
         """Return configurations of SequentialMemory
 
@@ -103,17 +124,14 @@ class PriorityMemory(Memory):
         """
         config = super(PriorityMemory, self).get_config()
         config['limit'] = self.limit
+        config['minority_chance'] = self.minority_chance
         return config
 
 
 if __name__ == "__main__":
     memory = PriorityMemory(limit=1_000, window_length=1)
-    memory.append([1], 1, 1, True)  # s, a, r, t
-    memory.append([1], 1, 1, False)
-    memory.append([1], 1, 1, False)
-    print(memory.minority_experiences)
-    print(memory.majority_experiences)
-    memory.append([0], 1, 0.5, False)
-    memory.append([0], 1, 0.5, False)
-    print(memory.minority_experiences, memory.majority_experiences)
-    print(memory.sample(4))
+    [memory.append([1], 1, 1, True) for i in range(5)]  # s, a, r, t
+    [memory.append([0], 1, 0.5, False) for i in range(5)]
+    print(len(memory.minority_experiences), len(memory.majority_experiences))
+    print(*[x[0][0] for x in memory.sample(4)])
+    print(PriorityMemory.calculate_batch_sizes(64, 0.01))
