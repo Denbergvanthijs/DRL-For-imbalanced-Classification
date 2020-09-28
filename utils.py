@@ -41,7 +41,8 @@ def plot_conf_matrix(y_true, y_pred) -> dict:
     ticklabels = ("Minority", "Majority")
 
     print(classification_report(y_true, y_pred, target_names=ticklabels[::-1]))
-    print("".join([f"{k}: {v:.6f} " for k, v in stats.items()]))
+    # Using round() instead of string formatting since we don't want trailling 0's for integers
+    print("".join([f"{k}: {round(v, 6)} " for k, v in stats.items()]))
 
     sns.heatmap(((stats.get("TP"), stats.get("FN")), (stats.get("FP"), stats.get("TN"))),
                 annot=True, fmt="_d", cmap="viridis", xticklabels=ticklabels, yticklabels=ticklabels)
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     min_class = [1]  # Minority classes, must be same as trained model
     maj_class = [0]  # Majority classes, must be same as trained model
     datasource = "credit"  # The dataset to be selected
-    fp_model = "./models/20200924_FN20_FP11.h5"  # Filepath to the .h5-model
+    fp_model = "./models/20200928_FN20_FP91.h5"  # Filepath to the .h5-model
 
     # Remove classes ∉ {min_class, maj_class}, imbalance the dataset
     # Make sure the same seed is used as during training to ensure no data contamination
