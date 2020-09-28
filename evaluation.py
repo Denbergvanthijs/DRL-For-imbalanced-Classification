@@ -61,6 +61,7 @@ class ClassifyProcessor(Processor):
 
 processor = ClassifyProcessor()
 with open(f"./logs_alt/DQN_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", 'w', newline='') as f:
+    print(f"Writing files to: {f.name}")
     writer = csv.DictWriter(f, fieldnames=columns)
     writer.writeheader()
 
