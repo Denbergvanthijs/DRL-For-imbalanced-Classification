@@ -13,8 +13,8 @@ from callbacks import Metrics
 from get_data import load_data
 from get_model import get_image_model, get_structured_model, get_text_model
 from ICMDP_Env import ClassifyEnv
-from utils import make_predictions, plot_conf_matrix
 from memory import PriorityMemory
+from utils import make_predictions, plot_conf_matrix
 
 # TODO: Determine why CPU is faster than GPU
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # -1: Defaults to CPU, 0: GPU
@@ -24,11 +24,13 @@ EPS_MAX = 1.0  # EpsGreedyQPolicy maximum
 EPS_MIN = 0.05  # EpsGreedyQPolicy minimum
 EPS_STEPS = 200_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
 GAMMA = 0.95  # Discount factor, importance of future reward
-LR = 0.001  # Learning rate
-WARMUP_STEPS = 60_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
+LR = 0.00025  # Learning rate
+WARMUP_STEPS = 150_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
-MEMORY_SIZE = 100_000  # Size of the SequentialMemory
-BATCH_SIZE = 32  # Minibatch size sampled from SequentialMemory
+# MEMORY_SIZE = 100_000  # Size of the SequentialMemory
+MEMORY_SIZE = (300, 100_000)  # Size of the PriorityMemory
+MINORITY_CHANCE = 0.125
+BATCH_SIZE = 64  # Minibatch size sampled from Memory
 DOUBLE_DQN = True  # To enable or disable DDQN as proposed by https://arxiv.org/pdf/1509.06461.pdf
 NORMALIZATION = True  # Normalize the Kaggle Credit Card Fraud dataset?
 MODE = "train"  # Train or test mode
@@ -80,7 +82,7 @@ class ClassifyProcessor(Processor):
         if args.model == "text":
             return batch.reshape((-1, input_shape[1]))
 
-        batch = batch.reshape((-1,) + input_shape)
+        batch = batch.reshape((-1, ) + input_shape)
         return batch.astype("float32") / 1
 
     def process_reward(self, reward):
@@ -89,11 +91,11 @@ class ClassifyProcessor(Processor):
 
 processor = ClassifyProcessor()
 # memory = SequentialMemory(limit=MEMORY_SIZE, window_length=1)
-memory = PriorityMemory(limit=MEMORY_SIZE, window_length=1)
+memory = PriorityMemory(limit=MEMORY_SIZE, minority_chance=MINORITY_CHANCE, window_length=1)
 policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr="eps", value_max=EPS_MAX, value_min=EPS_MIN, value_test=0.05, nb_steps=EPS_STEPS)
 
 dqn = DQNAgent(model=model, policy=policy, nb_actions=2, memory=memory, processor=processor, nb_steps_warmup=WARMUP_STEPS, gamma=GAMMA,
-               target_model_update=TARGET_MODEL_UPDATE, train_interval=4, delta_clip=1, batch_size=BATCH_SIZE, enable_double_dqn=DOUBLE_DQN)
+               target_model_update=TARGET_MODEL_UPDATE, train_interval=1, delta_clip=1, batch_size=BATCH_SIZE, enable_double_dqn=DOUBLE_DQN)
 dqn.compile(Adam(lr=LR))
 
 metrics = Metrics(X_val, y_val)
