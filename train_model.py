@@ -24,13 +24,13 @@ EPS_MAX = 1.0  # EpsGreedyQPolicy maximum
 EPS_MIN = 0.05  # EpsGreedyQPolicy minimum
 EPS_STEPS = 200_000  # Amount of steps to go (linear) from `EPS_MAX` to `EPS_MIN`
 GAMMA = 0.95  # Discount factor, importance of future reward
-LR = 0.00025  # Learning rate
-WARMUP_STEPS = 150_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
+LR = 0.001  # Learning rate
+WARMUP_STEPS = 50_000  # Warmup period before training starts, https://stackoverflow.com/a/47455338
 TARGET_MODEL_UPDATE = 0.0005  # Frequency of updating the target network, https://github.com/keras-rl/keras-rl/issues/55
 # MEMORY_SIZE = 100_000  # Size of the SequentialMemory
 MEMORY_SIZE = (300, 100_000)  # Size of the PriorityMemory
-MINORITY_CHANCE = 0.125
-BATCH_SIZE = 64  # Minibatch size sampled from Memory
+MINORITY_CHANCE = 0.01
+BATCH_SIZE = 128  # Minibatch size sampled from Memory
 DOUBLE_DQN = True  # To enable or disable DDQN as proposed by https://arxiv.org/pdf/1509.06461.pdf
 NORMALIZATION = True  # Normalize the Kaggle Credit Card Fraud dataset?
 MODE = "train"  # Train or test mode
@@ -98,7 +98,7 @@ dqn = DQNAgent(model=model, policy=policy, nb_actions=2, memory=memory, processo
                target_model_update=TARGET_MODEL_UPDATE, train_interval=1, delta_clip=1, batch_size=BATCH_SIZE, enable_double_dqn=DOUBLE_DQN)
 dqn.compile(Adam(lr=LR))
 
-metrics = Metrics(X_val, y_val)
+metrics = Metrics(X_val, y_val, interval=5_000)
 dqn.fit(env, nb_steps=training_steps, log_interval=LOG_INTERVAL, callbacks=[metrics])
 dqn.target_model.save(FP_MODEL)
 
